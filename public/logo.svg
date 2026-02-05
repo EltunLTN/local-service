@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50" fill="none">
+  <!-- Logo Icon -->
+  <g>
+    <!-- Wrench/Tool Icon -->
+    <path d="M20 10C13.4 10 8 15.4 8 22c0 4.4 2.4 8.3 6 10.4V38c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-5.6c3.6-2.1 6-6 6-10.4 0-6.6-5.4-12-12-12z" fill="#2E5BFF"/>
+    <circle cx="16" cy="20" r="2" fill="white"/>
+    <circle cx="24" cy="20" r="2" fill="white"/>
+    <path d="M16 26h8" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="48" y="34" font-family="Manrope, Arial, sans-serif" font-size="28" font-weight="700" fill="#1A1F36">
+    Usta<tspan fill="#2E5BFF">Bul</tspan>
+  </text>
+</svg>
