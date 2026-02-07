@@ -136,7 +136,7 @@ export default function CareerPage() {
           </h2>
           <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto">
             Aşağıdakı vakansiyalara müraciət edə bilərsiniz. Uyğun vakansiya tapmadınız? 
-            CV-nizi <Link href="mailto:hr@ustabul.az" className="text-primary hover:underline">hr@ustabul.az</Link> ünvanına göndərin.
+            CV-nizi <a href="mailto:hr@ustabul.az" className="text-primary hover:underline">hr@ustabul.az</a> ünvanına göndərin.
           </p>
 
           <div className="max-w-4xl mx-auto space-y-4">
@@ -169,10 +169,10 @@ export default function CareerPage() {
                       </div>
                     </div>
                     <Button className="group-hover:bg-primary-600" asChild>
-                      <Link href={`mailto:hr@ustabul.az?subject=Müraciət: ${position.title}`}>
+                      <a href={`mailto:hr@ustabul.az?subject=Müraciət: ${position.title}`}>
                         Müraciət Et
                         <ChevronRight className="ml-1 h-4 w-4" />
-                      </Link>
+                      </a>
                     </Button>
                   </div>
                 </Card>

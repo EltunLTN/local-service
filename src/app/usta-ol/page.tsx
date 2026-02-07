@@ -3,6 +3,7 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Eye,
@@ -77,13 +78,14 @@ const steps = [
 
 const benefits = [
   { icon: TrendingUp, title: "Müştəri axını", desc: "Hər gün yeni müştərilər" },
-  { icon: DollarSign, title: "Əlavə gəlir", desc: "Orta hesabla 1500₼/ay" },
+  { icon: DollarSign, title: "Əlavə gəlir", desc: "Öz qiymətinizi təyin edin" },
   { icon: Star, title: "Reytinq sistemi", desc: "Keyfiyyətli iş görün" },
   { icon: BadgeCheck, title: "Təsdiqlənmiş profil", desc: "Etibar qazanın" },
 ]
 
 export default function MasterRegistrationPage() {
   const router = useRouter()
+  const { data: session } = useSession()
   
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState({
@@ -238,13 +240,17 @@ export default function MasterRegistrationPage() {
     setError("")
 
     try {
-      const response = await fetch("/api/auth/register", {
+      // If user is already logged in, try to upgrade to master
+      const isLoggedIn = !!session?.user?.email
+      const endpoint = isLoggedIn ? "/api/auth/upgrade-to-master" : "/api/auth/register"
+      
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           firstName: formData.firstName,
           lastName: formData.lastName,
-          email: formData.email,
+          email: isLoggedIn ? session.user.email : formData.email,
           phone: formData.phone,
           password: formData.password,
           role: "MASTER",

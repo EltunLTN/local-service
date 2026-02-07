@@ -86,10 +86,10 @@ function HeroSection() {
   }, [])
 
   const serviceHighlights = [
-    { icon: Zap, label: "Elektrik", color: "#FFC837", jobs: "2,500+" },
-    { icon: Droplets, label: "Santexnik", color: "#2E5BFF", jobs: "1,800+" },
-    { icon: Hammer, label: "Təmir", color: "#00D084", jobs: "3,200+" },
-    { icon: AirVent, label: "Kondisioner", color: "#7B3FF2", jobs: "1,200+" },
+    { icon: Zap, label: "Elektrik", color: "#FFC837" },
+    { icon: Droplets, label: "Santexnik", color: "#2E5BFF" },
+    { icon: Hammer, label: "Təmir", color: "#00D084" },
+    { icon: AirVent, label: "Kondisioner", color: "#7B3FF2" },
   ]
 
   return (
@@ -290,7 +290,6 @@ function HeroSection() {
                     <service.icon className="h-5 w-5" style={{ color: service.color }} />
                   </div>
                   <p className="text-gray-900 font-medium text-sm">{service.label}</p>
-                  <p className="text-gray-500 text-xs">{service.jobs} iş</p>
                 </motion.div>
               ))}
             </motion.div>
@@ -306,9 +305,9 @@ function HeroSection() {
               className="rounded-3xl bg-white border border-gray-200 shadow-lg p-6 flex items-center justify-between"
             >
               <div>
-                <p className="text-gray-500 text-sm mb-1">Bu ay tamamlanan</p>
-                <p className="text-4xl font-bold text-gray-900">2,847</p>
-                <p className="text-green-600 text-sm mt-1">↑ 12% artım</p>
+                <p className="text-gray-500 text-sm mb-1">Platforma statusu</p>
+                <p className="text-2xl font-bold text-gray-900">Aktiv</p>
+                <p className="text-green-600 text-sm mt-1">✓ Hazırdır</p>
               </div>
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
                 <CheckCircle className="h-10 w-10 text-white" />
@@ -335,46 +334,32 @@ function HeroSection() {
               </div>
 
               <div className="relative z-10 h-full flex flex-col">
-                <p className="text-gray-600 text-sm mb-4">Ən yaxşı ustalar</p>
+                <p className="text-gray-600 text-sm mb-4">Nə təklif edirik</p>
                 
-                {/* Featured Master */}
+                {/* Feature 1 */}
                 <div className="flex items-center gap-4 mb-4 p-4 rounded-2xl bg-white shadow-md">
-                  <div className="relative">
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-xl font-bold">
-                      Ə
-                    </div>
-                    <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
+                    <Shield className="h-7 w-7 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-gray-900 font-semibold">Əli Məmmədov</p>
-                    <p className="text-gray-500 text-sm">Elektrik ustası</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-1 text-yellow-500">
-                      <Star className="h-4 w-4 fill-current" />
-                      <span className="font-semibold text-gray-900">4.9</span>
-                    </div>
-                    <p className="text-gray-400 text-xs">127 rəy</p>
+                    <p className="text-gray-900 font-semibold">Yoxlanılmış ustalar</p>
+                    <p className="text-gray-500 text-sm">Bütün ustalar təsdiqlənir</p>
                   </div>
                 </div>
 
-                {/* More Masters */}
+                {/* More features */}
                 <div className="flex-1 space-y-3">
                   {[
-                    { name: "Vüqar H.", specialty: "Santexnik", rating: 5.0 },
-                    { name: "Rəşad Ə.", specialty: "Təmir", rating: 4.8 },
-                  ].map((master, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-white/80 hover:bg-white hover:shadow-md transition-all cursor-pointer">
-                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 font-medium">
-                        {master.name[0]}
+                    { icon: Clock, label: "Sürətli cavab", desc: "24 saat içində" },
+                    { icon: Star, label: "Reytinq sistemi", desc: "Şəffaf rəylər" },
+                  ].map((feature, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-white/80 hover:bg-white hover:shadow-md transition-all">
+                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-primary">
+                        <feature.icon className="h-5 w-5" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-gray-900 text-sm">{master.name}</p>
-                        <p className="text-gray-500 text-xs">{master.specialty}</p>
-                      </div>
-                      <div className="flex items-center gap-1 text-yellow-500 text-sm">
-                        <Star className="h-3 w-3 fill-current" />
-                        <span className="text-gray-900">{master.rating}</span>
+                        <p className="text-gray-900 text-sm">{feature.label}</p>
+                        <p className="text-gray-500 text-xs">{feature.desc}</p>
                       </div>
                     </div>
                   ))}
@@ -413,7 +398,7 @@ function HeroSection() {
             </div>
             <div className="flex items-center gap-3">
               <Star className="h-6 w-6 text-yellow-500" />
-              <span className="text-gray-600 text-sm">10,000+ Məmnun Müştəri</span>
+              <span className="text-gray-600 text-sm">Yüksək Məmnuniyyət</span>
             </div>
           </div>
         </motion.div>
@@ -532,9 +517,9 @@ function StatsSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" })
 
   const stats = [
-    { icon: <CheckCircle className="h-8 w-8" />, value: "10,000+", label: "Tamamlanmış İş", color: "#00D084" },
-    { icon: <Users className="h-8 w-8" />, value: "500+", label: "Peşəkar Usta", color: "#2E5BFF" },
-    { icon: <Star className="h-8 w-8" />, value: "4.9/5", label: "Ortalama Reytinq", color: "#FFC837" },
+    { icon: <CheckCircle className="h-8 w-8" />, value: "100%", label: "Yoxlanılmış Ustalar", color: "#00D084" },
+    { icon: <Users className="h-8 w-8" />, value: "8+", label: "Xidmət Kateqoriyası", color: "#2E5BFF" },
+    { icon: <Star className="h-8 w-8" />, value: "5/5", label: "Reytinq Sistemi", color: "#FFC837" },
     { icon: <Clock className="h-8 w-8" />, value: "24/7", label: "Dəstək Xidməti", color: "#7B3FF2" },
   ]
 
@@ -678,54 +663,22 @@ function HowItWorksSection() {
 function TopMastersSection() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
+  const [masters, setMasters] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // Demo ustalar
-  const masters = [
-    {
-      id: "1",
-      name: "Əli Məmmədov",
-      avatar: "",
-      category: "Elektrik",
-      rating: 4.9,
-      reviewCount: 127,
-      completedJobs: 150,
-      isVerified: true,
-      isOnline: true,
-    },
-    {
-      id: "2",
-      name: "Vüqar Həsənov",
-      avatar: "",
-      category: "Santexnik",
-      rating: 5.0,
-      reviewCount: 89,
-      completedJobs: 200,
-      isVerified: true,
-      isOnline: false,
-    },
-    {
-      id: "3",
-      name: "Rəşad Əliyev",
-      avatar: "",
-      category: "Ev Təmiri",
-      rating: 4.8,
-      reviewCount: 156,
-      completedJobs: 180,
-      isVerified: true,
-      isOnline: true,
-    },
-    {
-      id: "4",
-      name: "Tural Quliyev",
-      avatar: "",
-      category: "Kondisioner",
-      rating: 4.9,
-      reviewCount: 94,
-      completedJobs: 120,
-      isVerified: true,
-      isOnline: false,
-    },
-  ]
+  useEffect(() => {
+    fetch("/api/masters?limit=4&sort=rating")
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data?.length > 0) {
+          setMasters(data.data)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (!loading && masters.length === 0) return null
 
   return (
     <section className="py-20 bg-gray-50" ref={ref}>
@@ -768,16 +721,15 @@ function TopMastersSection() {
                     <div className="relative inline-block mb-4">
                       <UserAvatar
                         name={master.name}
-                        src={master.avatar}
+                        src={master.avatar || ""}
                         size="xl"
-                        isOnline={master.isOnline}
                       />
                     </div>
 
                     <h3 className="font-bold text-gray-900 mb-1 group-hover:text-primary transition-colors">
                       {master.name}
                     </h3>
-                    <p className="text-sm text-gray-500 mb-3">{master.category}</p>
+                    <p className="text-sm text-gray-500 mb-3">{master.categories?.[0]?.name || "Usta"}</p>
 
                     <div className="flex items-center justify-center gap-2 mb-3">
                       <SimpleRating value={master.rating} />
@@ -871,30 +823,24 @@ function TestimonialsSection() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
 
-  const testimonials = [
+  const features = [
     {
       id: 1,
-      name: "Nigar Həsənova",
-      avatar: "",
-      role: "Ev sahibi",
-      content: "Əla xidmət! Elektrik ustası çox peşəkar idi və işi sürətlə bitirdi. Mütləq tövsiyə edirəm!",
-      rating: 5,
+      icon: Shield,
+      title: "Təhlükəsiz Ödəniş",
+      content: "Bütün ödənişlər platforma vasitəsilə təhlükəsiz şəkildə həyata keçirilir.",
     },
     {
       id: 2,
-      name: "Rəşad Əhmədov",
-      avatar: "",
-      role: "Sahibkar",
-      content: "Ofisimiz üçün kondisioner quraşdırılması lazım idi. UstaBul vasitəsilə çox yaxşı usta tapdıq.",
-      rating: 5,
+      icon: CheckCircle,
+      title: "Zəmanətli Xidmət",
+      content: "Hər bir iş üçün keyfiyyət zəmanəti verilir. Narazı qalsanız, biz kömək edirik.",
     },
     {
       id: 3,
-      name: "Leyla Məmmədova",
-      avatar: "",
-      role: "Mənzil sahibi",
-      content: "Santexnik işləri üçün mükəmməl platformadır. Ustanın reytinqlərini görüb seçmək çox rahatdır.",
-      rating: 5,
+      icon: Users,
+      title: "Yoxlanılmış Ustalar",
+      content: "Bütün ustalar qeydiyyatdan keçir və profil məlumatları yoxlanılır.",
     },
   ]
 
@@ -908,10 +854,10 @@ function TestimonialsSection() {
           className="text-center mb-12"
         >
           <motion.h2 variants={fadeInUp} className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 font-display">
-            Müştərilərimiz Nə Deyir?
+            Niyə UstaBul?
           </motion.h2>
           <motion.p variants={fadeInUp} className="text-gray-600 max-w-2xl mx-auto">
-            Minlərlə məmnun müştərimizin rəylərini oxuyun
+            Etibar və keyfiyyət üzərində qurulmuş platforma
           </motion.p>
         </motion.div>
 
@@ -921,25 +867,17 @@ function TestimonialsSection() {
           variants={staggerContainer}
           className="grid md:grid-cols-3 gap-8"
         >
-          {testimonials.map((testimonial, index) => (
-            <motion.div key={testimonial.id} variants={fadeInUp}>
+          {features.map((feature) => (
+            <motion.div key={feature.id} variants={fadeInUp}>
               <Card className="h-full">
-                <div className="flex flex-col h-full">
-                  <Rating value={testimonial.rating} size="sm" className="mb-4" />
-                  <p className="text-gray-600 mb-6 flex-1">
-                    &ldquo;{testimonial.content}&rdquo;
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <UserAvatar
-                      name={testimonial.name}
-                      src={testimonial.avatar}
-                      size="md"
-                    />
-                    <div>
-                      <p className="font-semibold text-gray-900">{testimonial.name}</p>
-                      <p className="text-sm text-gray-500">{testimonial.role}</p>
-                    </div>
+                <div className="flex flex-col h-full text-center">
+                  <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                    <feature.icon className="h-7 w-7 text-primary" />
                   </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
+                  <p className="text-gray-600">
+                    {feature.content}
+                  </p>
                 </div>
               </Card>
             </motion.div>

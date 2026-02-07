@@ -225,23 +225,25 @@ function Sidebar({
   activeItem,
   setActiveItem,
   masterStats,
+  userName,
 }: {
   activeItem: string
   setActiveItem: (id: string) => void
   masterStats: any
+  userName: string
 }) {
   return (
     <aside className="hidden lg:block w-64 flex-shrink-0">
       <Card className="sticky top-24 p-4">
         {/* User Info */}
         <div className="flex items-center gap-3 mb-6 pb-4 border-b">
-          <UserAvatar name="Əli Məmmədov" size="lg" />
+          <UserAvatar name={userName} size="lg" />
           <div>
             <div className="flex items-center gap-1">
-              <h3 className="font-semibold text-gray-900">Əli Məmmədov</h3>
+              <h3 className="font-semibold text-gray-900">{userName}</h3>
               <VerifiedBadge size="sm" />
             </div>
-            <p className="text-sm text-gray-500">Elektrik ustası</p>
+            <p className="text-sm text-gray-500">Usta</p>
           </div>
         </div>
 
@@ -432,7 +434,7 @@ export default function MasterDashboard() {
 
         <div className="flex gap-8">
           {/* Sidebar */}
-          <Sidebar activeItem={activeItem} setActiveItem={setActiveItem} masterStats={masterStats} />
+          <Sidebar activeItem={activeItem} setActiveItem={setActiveItem} masterStats={masterStats} userName={session?.user?.name || "Usta"} />
 
           {/* Main Content */}
           <main className="flex-1 min-w-0 space-y-6">

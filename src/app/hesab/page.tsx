@@ -169,18 +169,20 @@ function StatCard({
 function Sidebar({
   activeItem,
   setActiveItem,
+  userName,
 }: {
   activeItem: string
   setActiveItem: (id: string) => void
+  userName: string
 }) {
   return (
     <aside className="hidden lg:block w-64 flex-shrink-0">
       <Card className="sticky top-24 p-4">
         {/* User Info */}
         <div className="flex items-center gap-3 mb-6 pb-4 border-b">
-          <UserAvatar name="Rəşad Əliyev" size="lg" />
+          <UserAvatar name={userName} size="lg" />
           <div>
-            <h3 className="font-semibold text-gray-900">Rəşad Əliyev</h3>
+            <h3 className="font-semibold text-gray-900">{userName}</h3>
             <p className="text-sm text-gray-500">Müştəri hesabı</p>
           </div>
         </div>
@@ -323,7 +325,7 @@ export default function CustomerDashboard() {
 
         <div className="flex gap-8">
           {/* Sidebar */}
-          <Sidebar activeItem={activeItem} setActiveItem={setActiveItem} />
+          <Sidebar activeItem={activeItem} setActiveItem={setActiveItem} userName={session?.user?.name || "İstifadəçi"} />
 
           {/* Main Content */}
           <main className="flex-1 min-w-0 space-y-6">

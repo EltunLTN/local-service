@@ -100,9 +100,25 @@ export default function ChatPage() {
       const data = await res.json()
       
       if (data.success) {
-        setConversations(data.conversations)
+        // API returns data.data with otherUser; map to page's Conversation format
+        const list = (data.data || data.conversations || []).map((c: any) => {
+          // otherUser has { id, name, avatar } — split name into firstName/lastName
+          const other = c.participant || c.otherUser || {}
+          const nameParts = (other.name || "").split(" ")
+          const firstName = other.firstName || nameParts[0] || "Naməlum"
+          const lastName = other.lastName || nameParts.slice(1).join(" ") || ""
+          return {
+            id: c.id,
+            participant: { id: other.id || "", firstName, lastName, avatar: other.avatar || null },
+            lastMessage: c.lastMessage && typeof c.lastMessage === "string"
+              ? { id: "", content: c.lastMessage, createdAt: c.lastMessageAt, senderId: "" }
+              : c.lastMessage || null,
+            lastMessageAt: c.lastMessageAt || "",
+          }
+        })
+        setConversations(list)
       } else {
-        toast.error(data.message || "Söhbətlər yüklənə bilmədi")
+        toast.error(data.message || data.error || "Söhbətlər yüklənə bilmədi")
       }
     } catch {
       toast.error("Server xətası baş verdi")
@@ -125,10 +141,16 @@ export default function ChatPage() {
       const data = await res.json()
       
       if (data.success) {
-        setConversationDetail(data.conversation)
-        setMessages(data.conversation.messages)
+        // API returns {data: {conversation, messages}} or {conversation, messages}
+        const payload = data.data || data
+        const conv = payload.conversation
+        const msgs = payload.messages || conv?.messages || []
+        if (conv) {
+          setConversationDetail(conv)
+        }
+        setMessages(msgs)
       } else {
-        toast.error(data.message || "Mesajlar yüklənə bilmədi")
+        toast.error(data.message || data.error || "Mesajlar yüklənə bilmədi")
       }
     } catch {
       toast.error("Server xətası baş verdi")

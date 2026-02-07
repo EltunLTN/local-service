@@ -48,18 +48,18 @@ const STEPS = [
   { id: 5, title: "Təsdiq", icon: Check },
 ]
 
-// Demo usta məlumatı
+// Seçilmiş usta (URL-dan yüklənəcək, hələlik boş)
 const SELECTED_MASTER = {
-  id: "1",
-  name: "Əli Məmmədov",
+  id: "",
+  name: "Usta seçilməyib",
   avatar: "",
-  category: "Elektrik",
-  rating: 4.9,
-  reviewCount: 127,
-  hourlyRate: 25,
-  isVerified: true,
-  isInsured: true,
-  responseTime: 15,
+  category: "",
+  rating: 0,
+  reviewCount: 0,
+  hourlyRate: 0,
+  isVerified: false,
+  isInsured: false,
+  responseTime: 0,
 }
 
 // Progress Bar komponenti

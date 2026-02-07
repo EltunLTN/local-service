@@ -19,10 +19,10 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 
 const stats = [
-  { value: "15,000+", label: "Tamamlanmış sifariş" },
-  { value: "2,500+", label: "Aktiv usta" },
-  { value: "50,000+", label: "Məmnun müştəri" },
-  { value: "4.8", label: "Orta reytinq" },
+  { value: "Yeni", label: "Platforma" },
+  { value: "100%", label: "Yoxlanılmış ustalar" },
+  { value: "7/24", label: "Dəstək xidməti" },
+  { value: "4.8", label: "Hədəf reytinq" },
 ]
 
 const values = [
@@ -48,39 +48,11 @@ const values = [
   },
 ]
 
-const team = [
-  {
-    name: "Əli Həsənov",
-    role: "CEO & Founder",
-    image: "/team/ceo.jpg",
-    bio: "10+ il idarəetmə təcrübəsi",
-  },
-  {
-    name: "Aynur Əliyeva",
-    role: "COO",
-    image: "/team/coo.jpg",
-    bio: "Əməliyyat mükəmməlliyi üzrə ekspert",
-  },
-  {
-    name: "Rəşad Məmmədov",
-    role: "CTO",
-    image: "/team/cto.jpg",
-    bio: "Texnologiya lideri",
-  },
-  {
-    name: "Günel İsmayılova",
-    role: "Head of Customer Success",
-    image: "/team/cs.jpg",
-    bio: "Müştəri xidmətləri mütəxəssisi",
-  },
-]
+const team: { name: string; role: string; image: string; bio: string }[] = []
 
 const milestones = [
-  { year: "2020", title: "Şirkətin qurulması", desc: "UstaBul ideyası yarandı" },
-  { year: "2021", title: "Beta versiya", desc: "İlk 100 usta və 500 müştəri" },
-  { year: "2022", title: "Böyümə dövrü", desc: "1000+ usta, 10000+ sifariş" },
-  { year: "2023", title: "Miqyaslama", desc: "Bütün Bakı rayonlarında xidmət" },
-  { year: "2024", title: "Genişlənmə", desc: "Azərbaycanın digər şəhərlərinə çıxış" },
+  { year: "2025", title: "Şirkətin qurulması", desc: "UstaBul ideyası yarandı və platforma hazırlandı" },
+  { year: "2026", title: "Beta versiya", desc: "Platformanın ilk versiyası istifadəyə verildi" },
 ]
 
 export default function AboutPage() {
@@ -102,8 +74,8 @@ export default function AboutPage() {
               Bakının ən etibarlı usta platforması
             </h1>
             <p className="text-xl text-white/80 mb-8">
-              2020-ci ildən bəri ev xidmətlərini sadə, sürətli və etibarlı edən
-              platformayıq. Minlərlə ailə bizə etibar edir.
+              Ev xidmətlərini sadə, sürətli və etibarlı edən
+              platformayıq. Keyfiyyətli usta xidməti bir kliklə.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Button size="lg" className="bg-white text-primary hover:bg-gray-100">
@@ -185,11 +157,11 @@ export default function AboutPage() {
             >
               <div className="aspect-square rounded-2xl bg-gradient-to-br from-primary/20 to-orange-500/20 flex items-center justify-center">
                 <div className="w-3/4 aspect-square rounded-2xl bg-white shadow-xl flex items-center justify-center">
-                  <img
-                    src="/about/mission.svg"
-                    alt="Our Mission"
-                    className="w-2/3"
-                  />
+                  <div className="text-center">
+                    <Target className="h-20 w-20 text-primary mx-auto mb-4" />
+                    <p className="text-lg font-semibold text-gray-900">Missiyamız</p>
+                    <p className="text-sm text-gray-500 mt-2 px-4">Keyfiyyətli ev xidmətlərini hər kəs üçün əlçatan etmək</p>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -293,32 +265,18 @@ export default function AboutPage() {
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               Komandamız
             </h2>
-            <p className="text-gray-600">Hər gün sizdən ötrü çalışan peşəkarlar</p>
+            <p className="text-gray-600">Peşəkar komandamız hər gün platformanı inkişaf etdirmək üçün çalışır</p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {team.map((member, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Card className="p-6 text-center group">
-                  <div className="w-24 h-24 rounded-full bg-gray-200 mx-auto mb-4 overflow-hidden">
-                    <img
-                      src={member.image}
-                      alt={member.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                    />
-                  </div>
-                  <h3 className="font-semibold text-gray-900">{member.name}</h3>
-                  <p className="text-primary text-sm font-medium">{member.role}</p>
-                  <p className="text-sm text-gray-500 mt-2">{member.bio}</p>
-                </Card>
-              </motion.div>
-            ))}
+          <div className="max-w-2xl mx-auto text-center">
+            <Card className="p-8">
+              <Users className="h-16 w-16 text-primary mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Böyüyən komanda</h3>
+              <p className="text-gray-600">
+                UstaBul komandası genişlənir. Əgər texnologiya ilə ev xidmətlərini dəyişdirmək istəyirsinizsə, 
+                <Link href="/karyera" className="text-primary hover:underline ml-1">vakansiyalarımıza baxın</Link>.
+              </p>
+            </Card>
           </div>
         </div>
       </section>

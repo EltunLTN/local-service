@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
 import { motion } from "framer-motion"
 import {
   User,
@@ -31,18 +32,32 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 
 export default function SettingsPage() {
+  const { data: session } = useSession()
   const [activeTab, setActiveTab] = useState("profile")
   const [isLoading, setIsLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
 
   // Profile state
   const [profile, setProfile] = useState({
-    firstName: "Murad",
-    lastName: "Əliyev",
-    email: "murad@example.com",
-    phone: "050-555-55-55",
-    address: "Nərimanov rayonu, Bakı",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    address: "",
   })
+
+  // Load from session
+  useEffect(() => {
+    if (session?.user) {
+      const nameParts = (session.user.name || "").split(" ")
+      setProfile(prev => ({
+        ...prev,
+        firstName: nameParts[0] || "",
+        lastName: nameParts.slice(1).join(" ") || "",
+        email: session.user?.email || "",
+      }))
+    }
+  }, [session])
 
   // Password state
   const [password, setPassword] = useState({

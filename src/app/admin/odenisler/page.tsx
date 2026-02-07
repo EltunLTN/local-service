@@ -74,7 +74,7 @@ export default function PaymentsPage() {
     if (status === 'unauthenticated') {
       router.push('/giris?callback=/admin/odenisler')
     } else if (status === 'authenticated') {
-      const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.email === 'admin@demo.az'
+      const isAdmin = session?.user?.role === 'ADMIN'
       if (!isAdmin) {
         router.push('/')
       }

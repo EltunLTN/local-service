@@ -107,7 +107,7 @@ export function Navbar() {
   const { data: session, status } = useSession()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [notificationCount, setNotificationCount] = useState(3)
+  const [notificationCount, setNotificationCount] = useState(0)
   
   // Real auth state from NextAuth
   const isAuthenticated = status === "authenticated" && !!session?.user
@@ -184,7 +184,6 @@ export function Navbar() {
                   <Button variant="ghost" size="icon" className="relative" asChild>
                     <Link href="/mesajlar">
                       <MessageSquare className="h-5 w-5" />
-                      <NotificationBadge count={2} />
                     </Link>
                   </Button>
 
@@ -200,19 +199,12 @@ export function Navbar() {
                       <DropdownMenuLabel>Bildirişlər</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <div className="max-h-[300px] overflow-y-auto">
-                        <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
-                          <span className="font-medium">Sifariş qəbul edildi</span>
-                          <span className="text-xs text-gray-500">Əli sifarişinizi qəbul etdi</span>
-                          <span className="text-xs text-gray-400">5 dəqiqə əvvəl</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
-                          <span className="font-medium">Yeni rəy</span>
-                          <span className="text-xs text-gray-500">Vüqar sizə 5 ulduz verdi!</span>
-                          <span className="text-xs text-gray-400">1 saat əvvəl</span>
-                        </DropdownMenuItem>
+                        <div className="py-8 text-center text-sm text-gray-500">
+                          Yeni bildiriş yoxdur
+                        </div>
                       </div>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-center text-primary">
+                      <DropdownMenuItem className="text-center text-primary" asChild>
                         <Link href="/bildirisler">Hamısını gör</Link>
                       </DropdownMenuItem>
                     </DropdownMenuContent>

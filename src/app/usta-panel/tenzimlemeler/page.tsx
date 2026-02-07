@@ -85,26 +85,22 @@ const DISTRICTS = [
 ]
 
 // Demo login history
-const LOGIN_HISTORY = [
-  { id: 1, device: "Chrome - Windows", ip: "192.168.1.100", date: "2026-02-07 14:30", location: "Bakı, Azərbaycan", current: true },
-  { id: 2, device: "Safari - iPhone", ip: "192.168.1.101", date: "2026-02-06 09:15", location: "Bakı, Azərbaycan", current: false },
-  { id: 3, device: "Firefox - MacOS", ip: "192.168.1.102", date: "2026-02-05 18:45", location: "Bakı, Azərbaycan", current: false },
-]
+const LOGIN_HISTORY: any[] = []
 
 // Sidebar Component
-function Sidebar() {
+function Sidebar({ userName }: { userName: string }) {
   return (
     <aside className="hidden lg:block w-64 flex-shrink-0">
       <Card className="sticky top-24 p-4">
         {/* User Info */}
         <div className="flex items-center gap-3 mb-6 pb-4 border-b">
-          <UserAvatar name="Əli Məmmədov" size="lg" />
+          <UserAvatar name={userName} size="lg" />
           <div>
             <div className="flex items-center gap-1">
-              <h3 className="font-semibold text-gray-900">Əli Məmmədov</h3>
+              <h3 className="font-semibold text-gray-900">{userName}</h3>
               <VerifiedBadge size="sm" />
             </div>
-            <p className="text-sm text-gray-500">Elektrik ustası</p>
+            <p className="text-sm text-gray-500">Usta</p>
           </div>
         </div>
 
@@ -237,14 +233,27 @@ export default function SettingsPage() {
 
   // Profile Settings State
   const [profileData, setProfileData] = useState({
-    firstName: "Əli",
-    lastName: "Məmmədov",
-    phone: "+994 50 123 45 67",
-    email: "ali@example.com",
-    bio: "10 illik təcrübəsi olan peşəkar elektrik ustası. Bakıda bütün rayonlarda xidmət göstərirəm.",
-    address: "Yasamal rayonu, Şərifzadə küç. 22",
+    firstName: "",
+    lastName: "",
+    phone: "",
+    email: "",
+    bio: "",
+    address: "",
     avatar: null as string | null,
   })
+
+  // Load from session
+  useEffect(() => {
+    if (session?.user) {
+      const nameParts = (session.user.name || "").split(" ")
+      setProfileData(prev => ({
+        ...prev,
+        firstName: nameParts[0] || "",
+        lastName: nameParts.slice(1).join(" ") || "",
+        email: session.user?.email || "",
+      }))
+    }
+  }, [session])
 
   // Service Settings State
   const [serviceData, setServiceData] = useState({
@@ -277,10 +286,10 @@ export default function SettingsPage() {
 
   // Payment Settings State
   const [paymentData, setPaymentData] = useState({
-    bankName: "Kapital Bank",
-    accountHolder: "Əli Məmmədov",
-    iban: "AZ21NABZ00000000137010001944",
-    swiftCode: "NABZAZ2X",
+    bankName: "",
+    accountHolder: "",
+    iban: "",
+    swiftCode: "",
     acceptCash: true,
     acceptCard: true,
     acceptTransfer: true,
@@ -436,7 +445,7 @@ export default function SettingsPage() {
       <div className="container-custom py-8">
         <div className="flex gap-8">
           {/* Sidebar */}
-          <Sidebar />
+          <Sidebar userName={session?.user?.name || "Usta"} />
 
           {/* Main Content */}
           <main className="flex-1 min-w-0">
