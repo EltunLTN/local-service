@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -22,9 +22,11 @@ import {
   Download,
   ArrowUpRight,
   ArrowDownRight,
+  Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import toast from 'react-hot-toast'
 
 // Sidebar navigation
 const SIDEBAR_ITEMS = [
@@ -39,64 +41,7 @@ const SIDEBAR_ITEMS = [
   { id: 'settings', icon: Settings, label: 'Tənzimləmələr', href: '/admin/tenzimlemeler' },
 ]
 
-// Demo analytics data
-const ANALYTICS_DATA = {
-  revenue: {
-    current: 45680,
-    previous: 38450,
-    change: 18.8,
-    chartData: [12, 19, 15, 25, 22, 30, 28, 35, 32, 40, 38, 45],
-  },
-  orders: {
-    current: 1247,
-    previous: 1089,
-    change: 14.5,
-    chartData: [45, 52, 48, 61, 55, 67, 72, 68, 75, 82, 78, 85],
-  },
-  users: {
-    current: 3456,
-    previous: 2987,
-    change: 15.7,
-    chartData: [120, 145, 132, 168, 155, 178, 190, 185, 205, 218, 225, 240],
-  },
-  masters: {
-    current: 287,
-    previous: 245,
-    change: 17.1,
-    chartData: [15, 18, 20, 22, 25, 28, 30, 32, 35, 38, 40, 42],
-  },
-}
-
-const TOP_SERVICES = [
-  { name: 'Elektrik Təmiri', orders: 342, revenue: 12450, growth: 23 },
-  { name: 'Santexnik İşləri', orders: 289, revenue: 10280, growth: 15 },
-  { name: 'Ev Təmiri', orders: 245, revenue: 18500, growth: 32 },
-  { name: 'Kondisioner Quraşdırma', orders: 198, revenue: 15600, growth: -5 },
-  { name: 'Mebel Təmiri', orders: 156, revenue: 8900, growth: 12 },
-]
-
-const TOP_MASTERS = [
-  { name: 'Əli Məmmədov', orders: 127, rating: 4.9, revenue: 9850 },
-  { name: 'Vüqar Həsənov', orders: 98, rating: 5.0, revenue: 7600 },
-  { name: 'Rəşad Əliyev', orders: 89, rating: 4.8, revenue: 6800 },
-  { name: 'Tural Quliyev', orders: 76, rating: 4.9, revenue: 5900 },
-  { name: 'Kamran Əlizadə', orders: 65, rating: 4.7, revenue: 4800 },
-]
-
-const MONTHLY_DATA = [
-  { month: 'Yan', orders: 850, revenue: 28500 },
-  { month: 'Fev', orders: 920, revenue: 32400 },
-  { month: 'Mar', orders: 1050, revenue: 38900 },
-  { month: 'Apr', orders: 980, revenue: 35600 },
-  { month: 'May', orders: 1120, revenue: 42300 },
-  { month: 'İyn', orders: 1280, revenue: 48700 },
-  { month: 'İyl', orders: 1350, revenue: 52100 },
-  { month: 'Avq', orders: 1420, revenue: 55800 },
-  { month: 'Sen', orders: 1180, revenue: 45200 },
-  { month: 'Okt', orders: 1250, revenue: 48500 },
-  { month: 'Noy', orders: 1380, revenue: 53200 },
-  { month: 'Dek', orders: 1520, revenue: 58900 },
-]
+// No hardcoded data - all fetched from API
 
 function MiniChart({ data, color }: { data: number[]; color: string }) {
   const max = Math.max(...data)
@@ -172,6 +117,26 @@ export default function AnalyticsPage() {
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [dateRange, setDateRange] = useState('month')
+  const [isLoading, setIsLoading] = useState(true)
+  const [analyticsData, setAnalyticsData] = useState<any>(null)
+
+  const fetchAnalytics = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const res = await fetch('/api/admin/analytics')
+      const json = await res.json()
+      if (json.success) {
+        setAnalyticsData(json.data)
+      } else {
+        toast.error('Analitika yüklənə bilmədi')
+      }
+    } catch (error) {
+      console.error('Analytics fetch error:', error)
+      toast.error('Analitika yüklənə bilmədi')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
   // Check admin access
   useEffect(() => {
@@ -181,19 +146,25 @@ export default function AnalyticsPage() {
       const isAdmin = session?.user?.role === 'ADMIN'
       if (!isAdmin) {
         router.push('/')
+      } else {
+        fetchAnalytics()
       }
     }
-  }, [session, status, router])
+  }, [session, status, router, fetchAnalytics])
 
-  if (status === 'loading') {
+  if (status === 'loading' || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
 
-  const maxRevenue = Math.max(...MONTHLY_DATA.map(d => d.revenue))
+  const stats = analyticsData?.stats || { revenue: { current: 0, previous: 0, change: 0 }, orders: { current: 0, previous: 0, change: 0 }, users: { current: 0, previous: 0, change: 0 }, masters: { current: 0, previous: 0, change: 0 } }
+  const topServices = analyticsData?.topServices || []
+  const topMasters = analyticsData?.topMasters || []
+  const monthlyData = analyticsData?.monthlyData || []
+  const maxRevenue = Math.max(...monthlyData.map((d: any) => d.revenue), 1)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -286,35 +257,35 @@ export default function AnalyticsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatCard
               title="Ümumi Gəlir"
-              current={ANALYTICS_DATA.revenue.current}
-              previous={ANALYTICS_DATA.revenue.previous}
-              change={ANALYTICS_DATA.revenue.change}
-              chartData={ANALYTICS_DATA.revenue.chartData}
+              current={stats.revenue.current}
+              previous={stats.revenue.previous}
+              change={stats.revenue.change}
+              chartData={monthlyData.map((d: any) => d.revenue)}
               color="#2E5BFF"
               suffix=" ₼"
             />
             <StatCard
               title="Sifarişlər"
-              current={ANALYTICS_DATA.orders.current}
-              previous={ANALYTICS_DATA.orders.previous}
-              change={ANALYTICS_DATA.orders.change}
-              chartData={ANALYTICS_DATA.orders.chartData}
+              current={stats.orders.current}
+              previous={stats.orders.previous}
+              change={stats.orders.change}
+              chartData={monthlyData.map((d: any) => d.orders)}
               color="#00D084"
             />
             <StatCard
               title="İstifadəçilər"
-              current={ANALYTICS_DATA.users.current}
-              previous={ANALYTICS_DATA.users.previous}
-              change={ANALYTICS_DATA.users.change}
-              chartData={ANALYTICS_DATA.users.chartData}
+              current={stats.users.current}
+              previous={stats.users.previous}
+              change={stats.users.change}
+              chartData={[]}
               color="#7B3FF2"
             />
             <StatCard
               title="Ustalar"
-              current={ANALYTICS_DATA.masters.current}
-              previous={ANALYTICS_DATA.masters.previous}
-              change={ANALYTICS_DATA.masters.change}
-              chartData={ANALYTICS_DATA.masters.chartData}
+              current={stats.masters.current}
+              previous={stats.masters.previous}
+              change={stats.masters.change}
+              chartData={[]}
               color="#FFC837"
             />
           </div>
@@ -322,22 +293,26 @@ export default function AnalyticsPage() {
           {/* Revenue Chart */}
           <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
             <h2 className="text-lg font-semibold mb-6">Aylıq Gəlir</h2>
+            {monthlyData.length === 0 ? (
+              <p className="text-gray-500 text-center py-12">Hələ məlumat yoxdur</p>
+            ) : (
             <div className="flex items-end gap-2 h-64">
-              {MONTHLY_DATA.map((item, i) => (
+              {monthlyData.map((item: any, i: number) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-2">
                   <div className="w-full flex flex-col items-center">
                     <span className="text-xs text-gray-500 mb-1">
-                      {(item.revenue / 1000).toFixed(0)}k
+                      {item.revenue > 1000 ? `${(item.revenue / 1000).toFixed(0)}k` : item.revenue}
                     </span>
                     <div
                       className="w-full bg-gradient-to-t from-primary to-purple-500 rounded-t-lg transition-all hover:opacity-80"
-                      style={{ height: `${(item.revenue / maxRevenue) * 200}px` }}
+                      style={{ height: `${(item.revenue / maxRevenue) * 200}px`, minHeight: '4px' }}
                     />
                   </div>
                   <span className="text-xs text-gray-500">{item.month}</span>
                 </div>
               ))}
             </div>
+            )}
           </div>
 
           {/* Two Column Layout */}
@@ -346,7 +321,9 @@ export default function AnalyticsPage() {
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <h2 className="text-lg font-semibold mb-4">Ən Populyar Xidmətlər</h2>
               <div className="space-y-4">
-                {TOP_SERVICES.map((service, i) => (
+                {topServices.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">Hələ məlumat yoxdur</p>
+                ) : topServices.map((service: any, i: number) => (
                   <div key={i} className="flex items-center gap-4">
                     <span className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-600">
                       {i + 1}
@@ -375,7 +352,9 @@ export default function AnalyticsPage() {
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <h2 className="text-lg font-semibold mb-4">Ən Yaxşı Ustalar</h2>
               <div className="space-y-4">
-                {TOP_MASTERS.map((master, i) => (
+                {topMasters.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">Hələ məlumat yoxdur</p>
+                ) : topMasters.map((master: any, i: number) => (
                   <div key={i} className="flex items-center gap-4">
                     <div className="relative">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold">

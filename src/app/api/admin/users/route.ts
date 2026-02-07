@@ -56,11 +56,24 @@ export async function GET(request: NextRequest) {
         : u.email,
       avatar: u.customer?.avatar || u.master?.avatar || null,
       status: "active",
+      orders: 0,
+      spent: 0,
       createdAt: u.createdAt,
       emailVerified: u.emailVerified,
     }))
 
-    return NextResponse.json({ success: true, data: formatted, total, page, limit })
+    return NextResponse.json({
+      success: true,
+      data: {
+        users: formatted,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    })
   } catch (error) {
     console.error("Admin users error:", error)
     return NextResponse.json({ success: false, error: "İstifadəçilər yüklənə bilmədi" }, { status: 500 })

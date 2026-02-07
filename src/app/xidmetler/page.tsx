@@ -40,7 +40,7 @@ import {
   DISTANCE_OPTIONS,
   SORT_OPTIONS,
 } from "@/lib/constants"
-import { formatDistance } from "@/lib/utils"
+// formatDistance removed - unused
 
 // Filtr komponenti
 interface FilterSectionProps {
@@ -779,29 +779,24 @@ export default function ServicesPage() {
                 </Button>
               </Card>
             ) : (
-              <motion.div
-                layout
+              <div
                 className={cn(
                   viewMode === "grid"
                     ? "grid md:grid-cols-2 lg:grid-cols-3 gap-4"
                     : "space-y-4"
                 )}
               >
-                <AnimatePresence mode="popLayout">
-                  {sortedMasters.map((master, index) => (
-                    <motion.div
-                      key={master.id}
-                      layout
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <MasterCard master={master} view={viewMode} />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </motion.div>
+                {sortedMasters.map((master, index) => (
+                  <motion.div
+                    key={master.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <MasterCard master={master} view={viewMode} />
+                  </motion.div>
+                ))}
+              </div>
             )}
 
             {/* Load More */}
