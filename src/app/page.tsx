@@ -67,224 +67,356 @@ const categoryIcons: Record<string, React.ReactNode> = {
   Tv: <Tv className="h-8 w-8" />,
 }
 
-// Hero bölməsi
+// Hero bölməsi - Modern Bento Grid Design
 function HeroSection() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [activeService, setActiveService] = useState(0)
 
   const suggestions = POPULAR_SERVICES.filter(service =>
     service.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
+  // Auto-rotate featured services
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveService((prev) => (prev + 1) % SERVICE_CATEGORIES.length)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const serviceHighlights = [
+    { icon: Zap, label: "Elektrik", color: "#FFC837", jobs: "2,500+" },
+    { icon: Droplets, label: "Santexnik", color: "#2E5BFF", jobs: "1,800+" },
+    { icon: Hammer, label: "Təmir", color: "#00D084", jobs: "3,200+" },
+    { icon: AirVent, label: "Kondisioner", color: "#7B3FF2", jobs: "1,200+" },
+  ]
+
   return (
-    <section className="relative min-h-[85vh] flex items-center overflow-hidden">
-      {/* Animated Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-light via-white to-purple-50">
-        {/* Floating Blobs */}
+    <section className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Animated Gradient Background */}
+      <div className="absolute inset-0">
+        {/* Grid Pattern */}
+        <div 
+          className="absolute inset-0 opacity-30"
+          style={{
+            backgroundImage: `linear-gradient(rgba(46, 91, 255, 0.08) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(46, 91, 255, 0.08) 1px, transparent 1px)`,
+            backgroundSize: '60px 60px'
+          }}
+        />
+        
+        {/* Glowing Orbs */}
         <motion.div
-          className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl"
+          className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, rgba(46, 91, 255, 0.15) 0%, transparent 70%)',
+          }}
           animate={{
-            x: [0, 30, 0],
-            y: [0, -30, 0],
+            scale: [1, 1.2, 1],
+            opacity: [0.5, 0.8, 0.5],
           }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl"
+          className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, rgba(123, 63, 242, 0.15) 0%, transparent 70%)',
+          }}
           animate={{
-            x: [0, -40, 0],
-            y: [0, 40, 0],
+            scale: [1.2, 1, 1.2],
+            opacity: [0.6, 0.4, 0.6],
           }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute top-1/2 left-1/2 w-64 h-64 bg-orange-accent/10 rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.2, 1],
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, rgba(0, 208, 132, 0.1) 0%, transparent 70%)',
           }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          animate={{
+            rotate: [0, 360],
+          }}
+          transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
         />
       </div>
 
-      <div className="container-custom relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left Content */}
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-            className="text-center lg:text-left"
-          >
-            <motion.div variants={fadeInUp}>
-              <Badge variant="secondary" className="mb-4 inline-flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                24/7 xidmət mövcuddur
-              </Badge>
-            </motion.div>
-
-            <motion.h1
-              variants={fadeInUp}
-              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6 font-display"
+      <div className="container-custom relative z-10 py-20 lg:py-28">
+        {/* Main Grid Layout - Bento Style */}
+        <div className="grid lg:grid-cols-12 gap-6 items-start">
+          
+          {/* Left Side - Main Content */}
+          <div className="lg:col-span-7 space-y-6">
+            {/* Main Hero Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="relative p-8 lg:p-12 rounded-3xl bg-white/70 backdrop-blur-xl border border-gray-200 shadow-xl overflow-hidden"
             >
-              Evinizdə Usta{" "}
-              <span className="text-gradient">Problem?</span>
-              <br />
-              Dərhal Həll Edin! 🔧
-            </motion.h1>
-
-            <motion.p
-              variants={fadeInUp}
-              className="text-lg text-gray-600 mb-8 max-w-lg mx-auto lg:mx-0"
-            >
-              Peşəkar ustaları saniyələr içində tapın. Elektrik, santexnik, təmir 
-              və daha çox xidmət - bir klik uzaqlığında!
-            </motion.p>
-
-            {/* Search Box */}
-            <motion.div variants={fadeInUp} className="relative max-w-xl mx-auto lg:mx-0">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Hansı xidmət axtarırsınız?"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value)
-                    setShowSuggestions(true)
-                  }}
-                  onFocus={() => setShowSuggestions(true)}
-                  className="pl-12 pr-32 h-14 text-lg rounded-2xl border-2 border-gray-200 shadow-lg focus:shadow-xl transition-shadow"
-                />
-                <Button
-                  size="lg"
-                  className="absolute right-2 top-1/2 -translate-y-1/2"
-                >
-                  Axtar
-                </Button>
-              </div>
-
-              {/* Search Suggestions */}
-              {showSuggestions && searchQuery && suggestions.length > 0 && (
+              {/* Decorative Element */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-purple-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+              
+              <div className="relative z-10">
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border overflow-hidden z-20"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-purple-500/10 border border-primary/20 mb-6"
                 >
-                  {suggestions.map((suggestion, index) => (
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  </span>
+                  <span className="text-sm text-gray-700">500+ aktiv usta hazır</span>
+                </motion.div>
+
+                <motion.h1
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6 leading-tight"
+                >
+                  Eviniz üçün
+                  <br />
+                  <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 text-transparent bg-clip-text">
+                    Mükəmməl Usta
+                  </span>
+                  <br />
+                  Axtarırsınız? ✨
+                </motion.h1>
+
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-lg text-gray-600 mb-8 max-w-lg"
+                >
+                  Azərbaycanın ən böyük usta platformasında elektrik, santexnik, 
+                  təmir və daha çox xidmət - saniyələr içində!
+                </motion.p>
+
+                {/* Search Box - Glass Style */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="relative"
+                >
+                  <div className="relative">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Hansı xidmət axtarırsınız?"
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value)
+                        setShowSuggestions(true)
+                      }}
+                      onFocus={() => setShowSuggestions(true)}
+                      className="w-full pl-14 pr-36 h-16 text-lg rounded-2xl bg-white border-2 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all shadow-lg"
+                    />
+                    <Button
+                      size="lg"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
+                    >
+                      <Search className="h-4 w-4 mr-2" />
+                      Axtar
+                    </Button>
+                  </div>
+
+                  {/* Search Suggestions */}
+                  {showSuggestions && searchQuery && suggestions.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-20"
+                    >
+                      {suggestions.slice(0, 5).map((suggestion, index) => (
+                        <button
+                          key={index}
+                          className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                          onClick={() => {
+                            setSearchQuery(suggestion)
+                            setShowSuggestions(false)
+                          }}
+                        >
+                          <Search className="h-4 w-4 text-gray-400" />
+                          {suggestion}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </motion.div>
+
+                {/* Quick Service Tags */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="mt-6 flex flex-wrap gap-2"
+                >
+                  <span className="text-gray-500 text-sm">Populyar:</span>
+                  {POPULAR_SERVICES.slice(0, 4).map((service, index) => (
                     <button
                       key={index}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
-                      onClick={() => {
-                        setSearchQuery(suggestion)
-                        setShowSuggestions(false)
-                      }}
+                      onClick={() => setSearchQuery(service)}
+                      className="px-3 py-1 rounded-full bg-gray-100 border border-gray-200 text-sm text-gray-600 hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all"
                     >
-                      <Search className="h-4 w-4 text-gray-400" />
-                      {suggestion}
+                      {service}
                     </button>
                   ))}
                 </motion.div>
-              )}
+              </div>
             </motion.div>
 
-            {/* Popular Services */}
-            <motion.div variants={fadeInUp} className="mt-6 flex flex-wrap gap-2 justify-center lg:justify-start">
-              <span className="text-sm text-gray-500">💡 Populyar:</span>
-              {POPULAR_SERVICES.slice(0, 4).map((service, index) => (
-                <Link
+            {/* Service Highlight Cards - Horizontal Scroll on Mobile */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+            >
+              {serviceHighlights.map((service, index) => (
+                <motion.div
                   key={index}
-                  href={`/xidmetler?q=${encodeURIComponent(service)}`}
-                  className="text-sm text-primary hover:text-primary-hover hover:underline"
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  className="p-4 rounded-2xl bg-white border border-gray-200 shadow-md cursor-pointer group hover:shadow-xl transition-shadow"
                 >
-                  {service}
-                </Link>
+                  <div 
+                    className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110"
+                    style={{ backgroundColor: `${service.color}15` }}
+                  >
+                    <service.icon className="h-5 w-5" style={{ color: service.color }} />
+                  </div>
+                  <p className="text-gray-900 font-medium text-sm">{service.label}</p>
+                  <p className="text-gray-500 text-xs">{service.jobs} iş</p>
+                </motion.div>
               ))}
             </motion.div>
+          </div>
 
-            {/* Stats Mini */}
+          {/* Right Side - Bento Grid Cards */}
+          <div className="lg:col-span-5 hidden lg:grid grid-rows-3 gap-4 h-[600px]">
+            {/* Top Row - Stats Card */}
             <motion.div
-              variants={fadeInUp}
-              className="mt-10 flex items-center gap-8 justify-center lg:justify-start"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+              className="rounded-3xl bg-white border border-gray-200 shadow-lg p-6 flex items-center justify-between"
             >
-              <div className="flex items-center gap-2">
-                <div className="flex -space-x-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-600 border-2 border-white flex items-center justify-center text-white text-xs font-bold"
-                    >
-                      {String.fromCharCode(64 + i)}
+              <div>
+                <p className="text-gray-500 text-sm mb-1">Bu ay tamamlanan</p>
+                <p className="text-4xl font-bold text-gray-900">2,847</p>
+                <p className="text-green-600 text-sm mt-1">↑ 12% artım</p>
+              </div>
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
+                <CheckCircle className="h-10 w-10 text-white" />
+              </div>
+            </motion.div>
+
+            {/* Middle Row - Active Master Card */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+              className="row-span-2 rounded-3xl bg-gradient-to-br from-primary/5 via-purple-500/5 to-pink-500/5 border border-gray-200 shadow-lg p-6 relative overflow-hidden"
+            >
+              {/* Animated Background Effect */}
+              <div className="absolute inset-0 opacity-20">
+                <motion.div
+                  className="absolute w-40 h-40 rounded-full bg-primary/30 blur-3xl"
+                  animate={{
+                    x: [0, 50, 0],
+                    y: [0, 30, 0],
+                  }}
+                  transition={{ duration: 8, repeat: Infinity }}
+                />
+              </div>
+
+              <div className="relative z-10 h-full flex flex-col">
+                <p className="text-gray-600 text-sm mb-4">Ən yaxşı ustalar</p>
+                
+                {/* Featured Master */}
+                <div className="flex items-center gap-4 mb-4 p-4 rounded-2xl bg-white shadow-md">
+                  <div className="relative">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-xl font-bold">
+                      Ə
+                    </div>
+                    <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-gray-900 font-semibold">Əli Məmmədov</p>
+                    <p className="text-gray-500 text-sm">Elektrik ustası</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center gap-1 text-yellow-500">
+                      <Star className="h-4 w-4 fill-current" />
+                      <span className="font-semibold text-gray-900">4.9</span>
+                    </div>
+                    <p className="text-gray-400 text-xs">127 rəy</p>
+                  </div>
+                </div>
+
+                {/* More Masters */}
+                <div className="flex-1 space-y-3">
+                  {[
+                    { name: "Vüqar H.", specialty: "Santexnik", rating: 5.0 },
+                    { name: "Rəşad Ə.", specialty: "Təmir", rating: 4.8 },
+                  ].map((master, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-white/80 hover:bg-white hover:shadow-md transition-all cursor-pointer">
+                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 font-medium">
+                        {master.name[0]}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-gray-900 text-sm">{master.name}</p>
+                        <p className="text-gray-500 text-xs">{master.specialty}</p>
+                      </div>
+                      <div className="flex items-center gap-1 text-yellow-500 text-sm">
+                        <Star className="h-3 w-3 fill-current" />
+                        <span className="text-gray-900">{master.rating}</span>
+                      </div>
                     </div>
                   ))}
                 </div>
-                <span className="text-sm text-gray-600">
-                  <strong className="text-gray-900">500+</strong> Usta
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
-                <span className="text-sm text-gray-600">
-                  <strong className="text-gray-900">4.9</strong> Ortalama reytinq
-                </span>
+
+                <Button className="mt-4 w-full bg-gradient-to-r from-primary to-purple-600">
+                  <Link href="/ustalar" className="flex items-center justify-center">
+                    Bütün ustaları gör
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
               </div>
             </motion.div>
-          </motion.div>
-
-          {/* Right - Hero Image/Illustration */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="relative hidden lg:block"
-          >
-            <div className="relative aspect-square">
-              {/* Main Circle */}
-              <div className="absolute inset-8 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 animate-pulse" />
-              
-              {/* Center Image Placeholder */}
-              <div className="absolute inset-16 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
-                <div className="text-center text-white">
-                  <Hammer className="h-20 w-20 mx-auto mb-4" />
-                  <p className="font-bold text-xl">Peşəkar Ustalar</p>
-                </div>
-              </div>
-
-              {/* Floating Cards */}
-              <motion.div
-                className="absolute top-8 right-0 bg-white rounded-xl p-4 shadow-xl"
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 3, repeat: Infinity }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center">
-                    <CheckCircle className="h-5 w-5 text-success" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Sifariş tamamlandı!</p>
-                    <p className="text-xs text-gray-500">2 dəqiqə əvvəl</p>
-                  </div>
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="absolute bottom-16 left-0 bg-white rounded-xl p-4 shadow-xl"
-                animate={{ y: [0, 10, 0] }}
-                transition={{ duration: 4, repeat: Infinity }}
-              >
-                <div className="flex items-center gap-3">
-                  <UserAvatar name="Əli M." size="sm" />
-                  <div>
-                    <p className="font-semibold text-sm">Əli Məmmədov</p>
-                    <div className="flex items-center gap-1">
-                      <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
-                      <span className="text-xs">4.9 (127 rəy)</span>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </motion.div>
+          </div>
         </div>
+
+        {/* Trust Badges */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9 }}
+          className="mt-16 pt-8 border-t border-gray-200"
+        >
+          <div className="flex flex-wrap items-center justify-center gap-8 lg:gap-16">
+            <div className="flex items-center gap-3">
+              <Shield className="h-6 w-6 text-primary" />
+              <span className="text-gray-600 text-sm">100% Təhlükəsiz Ödəniş</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <CheckCircle className="h-6 w-6 text-green-500" />
+              <span className="text-gray-600 text-sm">Zəmanətli Xidmət</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Clock className="h-6 w-6 text-purple-500" />
+              <span className="text-gray-600 text-sm">24/7 Dəstək</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Star className="h-6 w-6 text-yellow-500" />
+              <span className="text-gray-600 text-sm">10,000+ Məmnun Müştəri</span>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   )

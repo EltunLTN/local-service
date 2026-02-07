@@ -3,175 +3,94 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 
-// GET /api/master/services - Get master services
+// GET /api/master/services
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, message: "Giriş tələb olunur" },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    const master = await prisma.master.findFirst({
-      where: { userId: (session.user as any).id },
-      include: {
-        services: true,
-      },
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+      include: { master: true },
     })
 
-    if (!master) {
-      return NextResponse.json(
-        { success: false, message: "Usta profili tapılmadı" },
-        { status: 404 }
-      )
+    if (!user?.master) {
+      return NextResponse.json({ success: true, data: [] })
     }
 
-    return NextResponse.json({
-      success: true,
-      services: master.services,
+    const services = await prisma.masterService.findMany({
+      where: { masterId: user.master.id },
+      orderBy: { createdAt: "desc" },
     })
+
+    return NextResponse.json({ success: true, data: services })
   } catch (error) {
-    console.error("Get services error:", error)
-    return NextResponse.json(
-      { success: false, message: "Server xətası" },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: "Xidmətlər yüklənə bilmədi" }, { status: 500 })
   }
 }
 
-// POST /api/master/services - Add new service
+// POST /api/master/services
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, message: "Giriş tələb olunur" },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    const master = await prisma.master.findFirst({
-      where: { userId: (session.user as any).id },
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+      include: { master: true },
     })
 
-    if (!master) {
-      return NextResponse.json(
-        { success: false, message: "Usta profili tapılmadı" },
-        { status: 404 }
-      )
+    if (!user?.master) {
+      return NextResponse.json({ success: false, error: "Usta profili tapılmadı" }, { status: 400 })
     }
 
     const body = await request.json()
     const { name, description, price, duration } = body
 
-    if (!name || !price) {
-      return NextResponse.json(
-        { success: false, message: "Ad və qiymət tələb olunur" },
-        { status: 400 }
-      )
-    }
-
     const service = await prisma.masterService.create({
       data: {
-        masterId: master.id,
+        masterId: user.master.id,
         name,
-        description,
-        price,
-        duration: duration || 60,
+        description: description || null,
+        price: parseFloat(price),
+        duration: parseInt(duration) || 60,
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      message: "Xidmət əlavə edildi",
-      service,
-    })
+    return NextResponse.json({ success: true, data: service })
   } catch (error) {
-    console.error("Add service error:", error)
-    return NextResponse.json(
-      { success: false, message: "Server xətası" },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: "Xidmət əlavə edilə bilmədi" }, { status: 500 })
   }
 }
 
-// PUT /api/master/services - Update services
+// PUT /api/master/services
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, message: "Giriş tələb olunur" },
-        { status: 401 }
-      )
-    }
-
-    const master = await prisma.master.findFirst({
-      where: { userId: (session.user as any).id },
-    })
-
-    if (!master) {
-      return NextResponse.json(
-        { success: false, message: "Usta profili tapılmadı" },
-        { status: 404 }
-      )
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
     const body = await request.json()
-    const { services } = body
+    const { id, name, description, price, duration, isActive } = body
 
-    if (!Array.isArray(services)) {
-      return NextResponse.json(
-        { success: false, message: "Düzgün format göndərin" },
-        { status: 400 }
-      )
-    }
-
-    // Update or create services
-    for (const service of services) {
-      if (service.id) {
-        await prisma.masterService.update({
-          where: { id: service.id },
-          data: {
-            name: service.name,
-            description: service.description,
-            price: service.price,
-            duration: service.duration,
-            isActive: service.isActive,
-          },
-        })
-      } else {
-        await prisma.masterService.create({
-          data: {
-            masterId: master.id,
-            name: service.name,
-            description: service.description,
-            price: service.price,
-            duration: service.duration || 60,
-          },
-        })
-      }
-    }
-
-    const updatedServices = await prisma.masterService.findMany({
-      where: { masterId: master.id },
+    const service = await prisma.masterService.update({
+      where: { id },
+      data: {
+        ...(name && { name }),
+        ...(description !== undefined && { description }),
+        ...(price !== undefined && { price: parseFloat(price) }),
+        ...(duration !== undefined && { duration: parseInt(duration) }),
+        ...(isActive !== undefined && { isActive }),
+      },
     })
 
-    return NextResponse.json({
-      success: true,
-      message: "Xidmətlər yeniləndi",
-      services: updatedServices,
-    })
+    return NextResponse.json({ success: true, data: service })
   } catch (error) {
-    console.error("Update services error:", error)
-    return NextResponse.json(
-      { success: false, message: "Server xətası" },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: "Xidmət yenilənə bilmədi" }, { status: 500 })
   }
 }

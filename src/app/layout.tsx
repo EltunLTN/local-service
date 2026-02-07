@@ -1,8 +1,7 @@
 import type { Metadata } from "next"
 import { Inter, Manrope } from "next/font/google"
 import "./globals.css"
-import { Navbar } from "@/components/layout/navbar"
-import { Footer } from "@/components/layout/footer"
+import { LayoutWrapper } from "@/components/layout/layout-wrapper"
 import { Providers } from "@/components/providers"
 
 const inter = Inter({ 
@@ -53,11 +52,7 @@ export default function RootLayout({
     <html lang="az" className={`${inter.variable} ${manrope.variable}`} suppressHydrationWarning>
       <body className={`${inter.className} antialiased`} suppressHydrationWarning>
         <Providers>
-          <div className="flex min-h-screen flex-col">
-            <Navbar />
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
+          <LayoutWrapper>{children}</LayoutWrapper>
         </Providers>
       </body>
     </html>

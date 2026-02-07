@@ -7,189 +7,94 @@ import prisma from "@/lib/prisma"
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, message: "Giriş tələb olunur" },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    const userId = (session.user as any).id
-
-    // Get customer or master profile
-    const customer = await prisma.customer.findFirst({
-      where: { userId },
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+      include: { customer: true, master: true },
     })
 
-    const master = await prisma.master.findFirst({
-      where: { userId },
-    })
-
-    if (!customer && !master) {
-      return NextResponse.json(
-        { success: false, message: "Profil tapılmadı" },
-        { status: 404 }
-      )
+    if (!user) {
+      return NextResponse.json({ success: false, error: "User not found" }, { status: 404 })
     }
 
-    // Build where clause
     const where: any = {}
-    if (customer) {
-      where.customerId = customer.id
-    }
-    if (master) {
-      where.masterId = master.id
+    if (user.customer) where.customerId = user.customer.id
+    else if (user.master) where.masterId = user.master.id
+    else {
+      return NextResponse.json({ success: true, data: [] })
     }
 
-    // Get conversations
     const conversations = await prisma.conversation.findMany({
       where,
       include: {
-        customer: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            avatar: true,
-          },
-        },
-        master: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            avatar: true,
-          },
-        },
-        messages: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-        },
+        customer: true,
+        master: true,
+        messages: { orderBy: { createdAt: "desc" }, take: 1 },
       },
       orderBy: { lastMessageAt: "desc" },
     })
 
-    const formattedConversations = conversations.map((conv) => ({
-      id: conv.id,
-      participant: customer ? conv.master : conv.customer,
-      lastMessage: conv.messages[0] || null,
-      lastMessageAt: conv.lastMessageAt,
+    const formatted = conversations.map((c) => ({
+      id: c.id,
+      otherUser: user.customer ? {
+        id: c.master.id,
+        name: `${c.master.firstName} ${c.master.lastName}`,
+        avatar: c.master.avatar,
+      } : {
+        id: c.customer.id,
+        name: `${c.customer.firstName} ${c.customer.lastName}`,
+        avatar: c.customer.avatar,
+      },
+      lastMessage: c.messages[0]?.content || "",
+      lastMessageAt: c.messages[0]?.createdAt || c.lastMessageAt,
+      unreadCount: 0,
     }))
 
-    return NextResponse.json({
-      success: true,
-      conversations: formattedConversations,
-    })
+    return NextResponse.json({ success: true, data: formatted })
   } catch (error) {
-    console.error("Get conversations error:", error)
-    return NextResponse.json(
-      { success: false, message: "Server xətası" },
-      { status: 500 }
-    )
+    console.error("Messages error:", error)
+    return NextResponse.json({ success: false, error: "Mesajlar yüklənə bilmədi" }, { status: 500 })
   }
 }
 
-// POST /api/messages - Send a message
+// POST /api/messages - Send message
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, message: "Giriş tələb olunur" },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    const userId = (session.user as any).id
     const body = await request.json()
-    const { conversationId, receiverId, content } = body
+    const { conversationId, content, receiverId } = body
 
-    if (!content) {
-      return NextResponse.json(
-        { success: false, message: "Mesaj mətni tələb olunur" },
-        { status: 400 }
-      )
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+    })
+
+    if (!user || !content) {
+      return NextResponse.json({ success: false, error: "Məlumat çatışmır" }, { status: 400 })
     }
 
-    let conversation
-
-    if (conversationId) {
-      conversation = await prisma.conversation.findUnique({
-        where: { id: conversationId },
-      })
-    } else if (receiverId) {
-      // Find or create conversation
-      const customer = await prisma.customer.findFirst({ where: { userId } })
-      const master = await prisma.master.findFirst({ where: { userId } })
-
-      if (customer) {
-        conversation = await prisma.conversation.findFirst({
-          where: {
-            customerId: customer.id,
-            masterId: receiverId,
-          },
-        })
-
-        if (!conversation) {
-          conversation = await prisma.conversation.create({
-            data: {
-              customerId: customer.id,
-              masterId: receiverId,
-            },
-          })
-        }
-      } else if (master) {
-        conversation = await prisma.conversation.findFirst({
-          where: {
-            masterId: master.id,
-            customerId: receiverId,
-          },
-        })
-
-        if (!conversation) {
-          conversation = await prisma.conversation.create({
-            data: {
-              masterId: master.id,
-              customerId: receiverId,
-            },
-          })
-        }
-      }
-    }
-
-    if (!conversation) {
-      return NextResponse.json(
-        { success: false, message: "Söhbət tapılmadı" },
-        { status: 404 }
-      )
-    }
-
-    // Create message
     const message = await prisma.conversationMessage.create({
       data: {
-        conversationId: conversation.id,
-        senderId: userId,
+        conversationId,
+        senderId: user.id,
         content,
       },
     })
 
-    // Update conversation last message time
     await prisma.conversation.update({
-      where: { id: conversation.id },
+      where: { id: conversationId },
       data: { lastMessageAt: new Date() },
     })
 
-    return NextResponse.json({
-      success: true,
-      message,
-    })
+    return NextResponse.json({ success: true, data: message })
   } catch (error) {
     console.error("Send message error:", error)
-    return NextResponse.json(
-      { success: false, message: "Server xətası" },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: "Mesaj göndərilə bilmədi" }, { status: 500 })
   }
 }

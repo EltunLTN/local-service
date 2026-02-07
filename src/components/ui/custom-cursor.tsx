@@ -1,19 +1,13 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
-import { motion, useMotionValue, useSpring } from "framer-motion"
+import React, { useEffect, useState, useRef } from "react"
 
 export function CustomCursor() {
-  const [isVisible, setIsVisible] = useState(false)
   const [isHovering, setIsHovering] = useState(false)
   const [isMobile, setIsMobile] = useState(true)
-
-  const cursorX = useMotionValue(-100)
-  const cursorY = useMotionValue(-100)
-
-  const springConfig = { damping: 25, stiffness: 400 }
-  const cursorXSpring = useSpring(cursorX, springConfig)
-  const cursorYSpring = useSpring(cursorY, springConfig)
+  const cursorRef = useRef<HTMLDivElement>(null)
+  const positionRef = useRef({ x: -100, y: -100 })
+  const isVisibleRef = useRef(false)
 
   useEffect(() => {
     // Check if mobile
@@ -27,20 +21,29 @@ export function CustomCursor() {
     window.addEventListener("resize", checkMobile)
 
     const handleMouseMove = (e: MouseEvent) => {
-      cursorX.set(e.clientX)
-      cursorY.set(e.clientY)
-      setIsVisible(true)
+      positionRef.current = { x: e.clientX, y: e.clientY }
+      if (cursorRef.current) {
+        cursorRef.current.style.left = `${e.clientX}px`
+        cursorRef.current.style.top = `${e.clientY}px`
+        cursorRef.current.style.opacity = '1'
+      }
+      isVisibleRef.current = true
     }
 
     const handleMouseLeave = () => {
-      setIsVisible(false)
+      if (cursorRef.current) {
+        cursorRef.current.style.opacity = '0'
+      }
+      isVisibleRef.current = false
     }
 
     const handleMouseEnter = () => {
-      setIsVisible(true)
+      if (cursorRef.current) {
+        cursorRef.current.style.opacity = '1'
+      }
+      isVisibleRef.current = true
     }
 
-    // Check for hoverable elements
     const handleElementHover = () => {
       const hoverElements = document.querySelectorAll(
         'a, button, [role="button"], input, textarea, select, .hoverable'
@@ -53,12 +56,11 @@ export function CustomCursor() {
     }
 
     if (!isMobile) {
-      document.addEventListener("mousemove", handleMouseMove)
+      document.addEventListener("mousemove", handleMouseMove, { passive: true })
       document.addEventListener("mouseleave", handleMouseLeave)
       document.addEventListener("mouseenter", handleMouseEnter)
       handleElementHover()
 
-      // Re-add listeners when DOM changes
       const observer = new MutationObserver(handleElementHover)
       observer.observe(document.body, { childList: true, subtree: true })
 
@@ -74,69 +76,50 @@ export function CustomCursor() {
     return () => {
       window.removeEventListener("resize", checkMobile)
     }
-  }, [cursorX, cursorY, isMobile])
+  }, [isMobile])
 
   if (isMobile) return null
 
   return (
     <>
-      {/* Main cursor - Wrench icon */}
-      <motion.div
-        className="fixed top-0 left-0 z-[9999] pointer-events-none"
+      {/* Circular Cursor */}
+      <div
+        ref={cursorRef}
+        className="fixed z-[9999] pointer-events-none"
         style={{
-          x: cursorXSpring,
-          y: cursorYSpring,
+          top: '-12px',
+          left: '-12px',
+          opacity: 0,
         }}
       >
-        <motion.div
-          animate={{
-            scale: isHovering ? 1.5 : 1,
-            rotate: isHovering ? 45 : 0,
+        <div
+          style={{
+            width: isHovering ? '40px' : '24px',
+            height: isHovering ? '40px' : '24px',
+            borderRadius: '50%',
+            border: `3px solid ${isHovering ? '#2E5BFF' : '#2E5BFF'}`,
+            backgroundColor: isHovering ? 'rgba(46, 91, 255, 0.15)' : 'transparent',
+            transform: 'translate(-50%, -50%)',
+            transition: 'width 0.15s ease-out, height 0.15s ease-out, background-color 0.15s ease-out',
+            boxShadow: isHovering ? '0 0 15px rgba(46, 91, 255, 0.4)' : 'none',
           }}
-          transition={{ duration: 0.2 }}
-          className="relative -translate-x-3 -translate-y-3"
-        >
-          {/* Wrench SVG */}
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            className={`transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
-          >
-            <motion.path
-              d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
-              stroke="#2E5BFF"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill="rgba(46, 91, 255, 0.1)"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 0.5 }}
-            />
-          </svg>
-        </motion.div>
-      </motion.div>
-
-      {/* Trail effect */}
-      <motion.div
-        className="fixed top-0 left-0 z-[9998] pointer-events-none"
-        style={{
-          x: cursorXSpring,
-          y: cursorYSpring,
-        }}
-      >
-        <motion.div
-          animate={{
-            scale: isHovering ? 2 : 1,
-            opacity: isHovering ? 0.3 : 0.15,
-          }}
-          className={`w-8 h-8 -translate-x-4 -translate-y-4 rounded-full bg-primary transition-opacity duration-200 ${
-            isVisible ? 'opacity-100' : 'opacity-0'
-          }`}
         />
-      </motion.div>
+        {/* Center dot */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            backgroundColor: '#2E5BFF',
+            transform: 'translate(-50%, -50%)',
+            opacity: isHovering ? 0 : 1,
+            transition: 'opacity 0.15s ease-out',
+          }}
+        />
+      </div>
 
       {/* Hide default cursor */}
       <style jsx global>{`

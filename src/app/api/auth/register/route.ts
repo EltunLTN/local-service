@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Qeydiyyat uğurla tamamlandı",
+      message: "Qeydiyyat uğurla tamamlandı! İndi daxil ola bilərsiniz.",
       data: {
         id: user.id,
         email: user.email,

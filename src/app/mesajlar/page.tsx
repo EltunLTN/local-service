@@ -1,7 +1,9 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef, useCallback } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Send,
@@ -17,184 +19,281 @@ import {
   Clock,
   Smile,
   Mic,
-  MapPin,
-  Calendar,
-  Star,
-  X,
-  ChevronDown,
+  Loader2,
+  MessageSquare,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import toast from "react-hot-toast"
 
-// Demo conversations
-const conversations = [
-  {
-    id: "1",
-    master: {
-      id: "m1",
-      name: "Əli Həsənov",
-      avatar: "/avatars/master-1.jpg",
-      profession: "Santexnik",
-      isOnline: true,
-      lastSeen: null,
-    },
-    lastMessage: "Salam, sabah 10:00-a gələ bilərəm. Uyğundur?",
-    lastMessageTime: "10:30",
-    unreadCount: 2,
-    isPinned: true,
-  },
-  {
-    id: "2",
-    master: {
-      id: "m2",
-      name: "Vüsal Məmmədov",
-      avatar: "/avatars/master-2.jpg",
-      profession: "Elektrik",
-      isOnline: false,
-      lastSeen: "2 saat əvvəl",
-    },
-    lastMessage: "İş tamamlandı, təşəkkür edirəm!",
-    lastMessageTime: "Dünən",
-    unreadCount: 0,
-    isPinned: false,
-  },
-  {
-    id: "3",
-    master: {
-      id: "m3",
-      name: "Rəşad Quliyev",
-      avatar: "/avatars/master-3.jpg",
-      profession: "Kondisioner ustası",
-      isOnline: true,
-      lastSeen: null,
-    },
-    lastMessage: "Qiymət təxminən 80-100 AZN arasında olacaq",
-    lastMessageTime: "Bazar ertəsi",
-    unreadCount: 0,
-    isPinned: false,
-  },
-  {
-    id: "4",
-    master: {
-      id: "m4",
-      name: "Tural İsmayılov",
-      avatar: "/avatars/master-4.jpg",
-      profession: "Mebel ustası",
-      isOnline: false,
-      lastSeen: "1 gün əvvəl",
-    },
-    lastMessage: "Foto göndərə bilərsiniz?",
-    lastMessageTime: "20 Yanvar",
-    unreadCount: 0,
-    isPinned: false,
-  },
-]
+// Types
+interface Participant {
+  id: string
+  firstName: string
+  lastName: string
+  avatar: string | null
+}
 
-// Demo messages for first conversation
-const demoMessages = [
-  {
-    id: "1",
-    senderId: "customer",
-    content: "Salam, kranım axır, baxmaq mümkündürmü?",
-    timestamp: "10:00",
-    status: "read",
-  },
-  {
-    id: "2",
-    senderId: "m1",
-    content: "Salam! Bəli, təbii ki. Hansı ünvanda yerləşirsiniz?",
-    timestamp: "10:05",
-    status: "read",
-  },
-  {
-    id: "3",
-    senderId: "customer",
-    content: "Nərimanov rayonu, Təbriz küçəsi 45. Sizə uyğun vaxt nə olardı?",
-    timestamp: "10:08",
-    status: "read",
-  },
-  {
-    id: "4",
-    senderId: "m1",
-    content: "Sabah 10:00-a gələ bilərəm. Uyğundur?",
-    timestamp: "10:30",
-    status: "delivered",
-  },
-]
+interface Message {
+  id: string
+  senderId: string
+  content: string
+  createdAt: string
+  isRead: boolean
+  readAt: string | null
+}
+
+interface LastMessage {
+  id: string
+  content: string
+  createdAt: string
+  senderId: string
+}
+
+interface Conversation {
+  id: string
+  participant: Participant
+  lastMessage: LastMessage | null
+  lastMessageAt: string
+}
+
+interface ConversationDetail {
+  id: string
+  customer: Participant
+  master: Participant
+  messages: Message[]
+}
 
 export default function ChatPage() {
-  const [selectedConversation, setSelectedConversation] = useState<string | null>("1")
-  const [messages, setMessages] = useState(demoMessages)
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [selectedConversation, setSelectedConversation] = useState<string | null>(null)
+  const [conversationDetail, setConversationDetail] = useState<ConversationDetail | null>(null)
+  const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState("")
-  const [isTyping, setIsTyping] = useState(false)
   const [showMobileChat, setShowMobileChat] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true)
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false)
+  const [isSending, setIsSending] = useState(false)
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const pollingRef = useRef<NodeJS.Timeout | null>(null)
 
-  const selectedChat = conversations.find((c) => c.id === selectedConversation)
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/giris")
+    }
+  }, [status, router])
+
+  // Fetch conversations on mount
+  const fetchConversations = useCallback(async () => {
+    try {
+      const res = await fetch("/api/messages")
+      const data = await res.json()
+      
+      if (data.success) {
+        setConversations(data.conversations)
+      } else {
+        toast.error(data.message || "Söhbətlər yüklənə bilmədi")
+      }
+    } catch {
+      toast.error("Server xətası baş verdi")
+    } finally {
+      setIsLoadingConversations(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetchConversations()
+    }
+  }, [status, fetchConversations])
+
+  // Fetch messages for selected conversation
+  const fetchMessages = useCallback(async (conversationId: string) => {
+    setIsLoadingMessages(true)
+    try {
+      const res = await fetch(`/api/messages/${conversationId}`)
+      const data = await res.json()
+      
+      if (data.success) {
+        setConversationDetail(data.conversation)
+        setMessages(data.conversation.messages)
+      } else {
+        toast.error(data.message || "Mesajlar yüklənə bilmədi")
+      }
+    } catch {
+      toast.error("Server xətası baş verdi")
+    } finally {
+      setIsLoadingMessages(false)
+    }
+  }, [])
+
+  // Handle conversation selection
+  const handleSelectConversation = useCallback((id: string) => {
+    setSelectedConversation(id)
+    setShowMobileChat(true)
+    fetchMessages(id)
+  }, [fetchMessages])
+
+  // Poll for new messages every 5 seconds
+  useEffect(() => {
+    if (selectedConversation) {
+      pollingRef.current = setInterval(() => {
+        fetchMessages(selectedConversation)
+        fetchConversations()
+      }, 5000)
+    }
+    
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+      }
+    }
+  }, [selectedConversation, fetchMessages, fetchConversations])
 
   // Auto scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return
+  // Send message
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedConversation || isSending) return
 
-    const message = {
-      id: Date.now().toString(),
-      senderId: "customer",
-      content: newMessage,
-      timestamp: new Date().toLocaleTimeString("az-AZ", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      status: "sent",
-    }
-
-    setMessages((prev) => [...prev, message])
+    const content = newMessage.trim()
     setNewMessage("")
+    setIsSending(true)
 
-    // Simulate typing
-    setIsTyping(true)
-    setTimeout(() => {
-      setIsTyping(false)
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          senderId: "m1",
-          content: "Yaxşı, qeyd etdim. Sabah görüşərik!",
-          timestamp: new Date().toLocaleTimeString("az-AZ", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          status: "delivered",
-        },
-      ])
-    }, 2000)
-  }
+    // Optimistic update
+    const optimisticMessage: Message = {
+      id: `temp-${Date.now()}`,
+      senderId: (session?.user as any)?.id || "",
+      content,
+      createdAt: new Date().toISOString(),
+      isRead: false,
+      readAt: null,
+    }
+    setMessages((prev) => [...prev, optimisticMessage])
 
-  const handleSelectConversation = (id: string) => {
-    setSelectedConversation(id)
-    setShowMobileChat(true)
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "sent":
-        return <Check className="h-3 w-3 text-gray-400" />
-      case "delivered":
-        return <CheckCheck className="h-3 w-3 text-gray-400" />
-      case "read":
-        return <CheckCheck className="h-3 w-3 text-primary" />
-      default:
-        return <Clock className="h-3 w-3 text-gray-400" />
+    try {
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversationId: selectedConversation,
+          content,
+        }),
+      })
+      
+      const data = await res.json()
+      
+      if (data.success) {
+        // Replace optimistic message with real one
+        setMessages((prev) => 
+          prev.map((msg) => 
+            msg.id === optimisticMessage.id ? data.message : msg
+          )
+        )
+        // Refresh conversations to update last message
+        fetchConversations()
+      } else {
+        // Remove optimistic message on error
+        setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessage.id))
+        setNewMessage(content)
+        toast.error(data.message || "Mesaj göndərilə bilmədi")
+      }
+    } catch {
+      // Remove optimistic message on error
+      setMessages((prev) => prev.filter((msg) => msg.id !== optimisticMessage.id))
+      setNewMessage(content)
+      toast.error("Server xətası baş verdi")
+    } finally {
+      setIsSending(false)
     }
   }
+
+  // Get status icon
+  const getStatusIcon = (isRead: boolean, isMine: boolean) => {
+    if (!isMine) return null
+    if (isRead) {
+      return <CheckCheck className="h-3 w-3 text-primary" />
+    }
+    return <CheckCheck className="h-3 w-3 text-gray-400" />
+  }
+
+  // Format time
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr)
+    return date.toLocaleTimeString("az-AZ", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
+
+  // Format conversation time
+  const formatConversationTime = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const now = new Date()
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+    
+    if (diffDays === 0) {
+      return formatTime(dateStr)
+    } else if (diffDays === 1) {
+      return "Dünən"
+    } else if (diffDays < 7) {
+      return date.toLocaleDateString("az-AZ", { weekday: "long" })
+    } else {
+      return date.toLocaleDateString("az-AZ", { day: "numeric", month: "short" })
+    }
+  }
+
+  // Get participant name
+  const getParticipantName = (participant: Participant) => {
+    return `${participant.firstName} ${participant.lastName}`
+  }
+
+  // Get current chat participant
+  const getCurrentParticipant = (): Participant | null => {
+    if (!conversationDetail || !session?.user) return null
+    const userId = (session.user as any).id
+    // Determine if current user is customer or master
+    // and return the other participant
+    return conversationDetail.customer.id === userId 
+      ? conversationDetail.master 
+      : conversationDetail.customer
+  }
+
+  // Filter conversations by search query
+  const filteredConversations = conversations.filter((conv) => {
+    if (!searchQuery) return true
+    const name = getParticipantName(conv.participant).toLowerCase()
+    return name.includes(searchQuery.toLowerCase())
+  })
+
+  // Loading state
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  // Not authenticated
+  if (status === "unauthenticated") {
+    return null
+  }
+
+  const currentParticipant = getCurrentParticipant()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -225,50 +324,56 @@ export default function ChatPage() {
 
               {/* Conversation List */}
               <div className="flex-1 overflow-y-auto">
-                {conversations.map((conv) => (
-                  <button
-                    key={conv.id}
-                    onClick={() => handleSelectConversation(conv.id)}
-                    className={cn(
-                      "w-full p-4 flex items-start gap-3 hover:bg-gray-50 transition-colors text-left border-b",
-                      selectedConversation === conv.id && "bg-primary/5"
-                    )}
-                  >
-                    <div className="relative">
-                      <Avatar className="h-12 w-12">
-                        <img
-                          src={conv.master.avatar}
-                          alt={conv.master.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </Avatar>
-                      {conv.master.isOnline && (
-                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
+                {isLoadingConversations ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                ) : filteredConversations.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                    <MessageSquare className="h-12 w-12 text-gray-300 mb-3" />
+                    <p className="text-gray-500">Heç bir söhbət tapılmadı</p>
+                  </div>
+                ) : (
+                  filteredConversations.map((conv) => (
+                    <button
+                      key={conv.id}
+                      onClick={() => handleSelectConversation(conv.id)}
+                      className={cn(
+                        "w-full p-4 flex items-start gap-3 hover:bg-gray-50 transition-colors text-left border-b",
+                        selectedConversation === conv.id && "bg-primary/5"
                       )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium text-gray-900 truncate">
-                          {conv.master.name}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {conv.lastMessageTime}
-                        </span>
+                    >
+                      <div className="relative">
+                        <Avatar className="h-12 w-12">
+                          {conv.participant.avatar ? (
+                            <img
+                              src={conv.participant.avatar}
+                              alt={getParticipantName(conv.participant)}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-medium">
+                              {conv.participant.firstName.charAt(0)}
+                            </div>
+                          )}
+                        </Avatar>
                       </div>
-                      <p className="text-sm text-gray-500 truncate">
-                        {conv.lastMessage}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {conv.master.profession}
-                      </p>
-                    </div>
-                    {conv.unreadCount > 0 && (
-                      <Badge className="bg-primary text-white">
-                        {conv.unreadCount}
-                      </Badge>
-                    )}
-                  </button>
-                ))}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium text-gray-900 truncate">
+                            {getParticipantName(conv.participant)}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {conv.lastMessageAt && formatConversationTime(conv.lastMessageAt)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 truncate">
+                          {conv.lastMessage?.content || "Söhbətə başlayın..."}
+                        </p>
+                      </div>
+                    </button>
+                  ))
+                )}
               </div>
             </div>
 
@@ -279,7 +384,7 @@ export default function ChatPage() {
                 !showMobileChat ? "hidden md:flex" : "flex"
               )}
             >
-              {selectedChat ? (
+              {selectedConversation && currentParticipant ? (
                 <>
                   {/* Chat Header */}
                   <div className="p-4 border-b flex items-center justify-between bg-white">
@@ -292,28 +397,26 @@ export default function ChatPage() {
                       </button>
                       <div className="relative">
                         <Avatar className="h-10 w-10">
-                          <img
-                            src={selectedChat.master.avatar}
-                            alt={selectedChat.master.name}
-                            className="w-full h-full object-cover"
-                          />
+                          {currentParticipant.avatar ? (
+                            <img
+                              src={currentParticipant.avatar}
+                              alt={getParticipantName(currentParticipant)}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-medium">
+                              {currentParticipant.firstName.charAt(0)}
+                            </div>
+                          )}
                         </Avatar>
-                        {selectedChat.master.isOnline && (
-                          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
-                        )}
                       </div>
                       <div>
                         <Link
-                          href={`/usta/${selectedChat.master.id}`}
+                          href={`/usta/${currentParticipant.id}`}
                           className="font-medium text-gray-900 hover:text-primary"
                         >
-                          {selectedChat.master.name}
+                          {getParticipantName(currentParticipant)}
                         </Link>
-                        <p className="text-xs text-gray-500">
-                          {selectedChat.master.isOnline
-                            ? "Onlayn"
-                            : selectedChat.master.lastSeen}
-                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -329,97 +432,65 @@ export default function ChatPage() {
                     </div>
                   </div>
 
-                  {/* Order Info Banner */}
-                  <div className="px-4 py-3 bg-primary/5 border-b">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Calendar className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            Sifariş #12345
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Santexnik xidməti • Sabah, 10:00
-                          </p>
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        Detallar
-                      </Button>
-                    </div>
-                  </div>
-
                   {/* Messages */}
                   <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-                    {/* Date Separator */}
-                    <div className="flex items-center justify-center">
-                      <span className="px-3 py-1 bg-white rounded-full text-xs text-gray-500 shadow-sm">
-                        Bu gün
-                      </span>
-                    </div>
-
-                    {messages.map((message) => (
-                      <motion.div
-                        key={message.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={cn(
-                          "flex",
-                          message.senderId === "customer" ? "justify-end" : "justify-start"
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "max-w-[75%] rounded-2xl px-4 py-2",
-                            message.senderId === "customer"
-                              ? "bg-primary text-white rounded-br-md"
-                              : "bg-white text-gray-900 rounded-bl-md shadow-sm"
-                          )}
-                        >
-                          <p className="text-sm">{message.content}</p>
-                          <div
-                            className={cn(
-                              "flex items-center justify-end gap-1 mt-1",
-                              message.senderId === "customer"
-                                ? "text-white/70"
-                                : "text-gray-400"
-                            )}
-                          >
-                            <span className="text-xs">{message.timestamp}</span>
-                            {message.senderId === "customer" && getStatusIcon(message.status)}
-                          </div>
+                    {isLoadingMessages ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      </div>
+                    ) : messages.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <MessageSquare className="h-12 w-12 text-gray-300 mb-3" />
+                        <p className="text-gray-500">Hələ mesaj yoxdur</p>
+                        <p className="text-sm text-gray-400">Söhbətə başlamaq üçün mesaj göndərin</p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Date Separator */}
+                        <div className="flex items-center justify-center">
+                          <span className="px-3 py-1 bg-white rounded-full text-xs text-gray-500 shadow-sm">
+                            Bu gün
+                          </span>
                         </div>
-                      </motion.div>
-                    ))}
 
-                    {/* Typing Indicator */}
-                    <AnimatePresence>
-                      {isTyping && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="flex items-center gap-2"
-                        >
-                          <Avatar className="h-8 w-8">
-                            <img
-                              src={selectedChat.master.avatar}
-                              alt={selectedChat.master.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </Avatar>
-                          <div className="bg-white rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
-                            <div className="flex gap-1">
-                              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.1s]" />
-                              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]" />
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                        {messages.map((message) => {
+                          const isMine = message.senderId === (session?.user as any)?.id
+                          return (
+                            <motion.div
+                              key={message.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className={cn(
+                                "flex",
+                                isMine ? "justify-end" : "justify-start"
+                              )}
+                            >
+                              <div
+                                className={cn(
+                                  "max-w-[75%] rounded-2xl px-4 py-2",
+                                  isMine
+                                    ? "bg-primary text-white rounded-br-md"
+                                    : "bg-white text-gray-900 rounded-bl-md shadow-sm"
+                                )}
+                              >
+                                <p className="text-sm">{message.content}</p>
+                                <div
+                                  className={cn(
+                                    "flex items-center justify-end gap-1 mt-1",
+                                    isMine
+                                      ? "text-white/70"
+                                      : "text-gray-400"
+                                  )}
+                                >
+                                  <span className="text-xs">{formatTime(message.createdAt)}</span>
+                                  {getStatusIcon(message.isRead, isMine)}
+                                </div>
+                              </div>
+                            </motion.div>
+                          )
+                        })}
+                      </>
+                    )}
 
                     <div ref={messagesEndRef} />
                   </div>
@@ -448,14 +519,23 @@ export default function ChatPage() {
                           placeholder="Mesaj yazın..."
                           className="w-full px-4 py-3 pr-10 rounded-2xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none max-h-32"
                           rows={1}
+                          disabled={isSending}
                         />
                         <button className="absolute right-3 bottom-3 text-gray-400 hover:text-gray-600">
                           <Smile className="h-5 w-5" />
                         </button>
                       </div>
                       {newMessage.trim() ? (
-                        <Button onClick={handleSendMessage} className="rounded-full h-12 w-12">
-                          <Send className="h-5 w-5" />
+                        <Button 
+                          onClick={handleSendMessage} 
+                          className="rounded-full h-12 w-12"
+                          disabled={isSending}
+                        >
+                          {isSending ? (
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                          ) : (
+                            <Send className="h-5 w-5" />
+                          )}
                         </Button>
                       ) : (
                         <Button variant="ghost" className="rounded-full h-12 w-12 text-gray-500">

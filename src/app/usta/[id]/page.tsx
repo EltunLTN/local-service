@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useParams } from "next/navigation"
@@ -40,177 +40,15 @@ import { Rating, SimpleRating } from "@/components/ui/rating"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { formatDate, formatRelativeTime, formatDistance } from "@/lib/utils"
+import toast from "react-hot-toast"
 
-// Demo usta məlumatları
-const DEMO_MASTER = {
-  id: "1",
-  name: "Əli Məmmədov",
-  avatar: "",
-  coverImage: "",
-  bio: "10 illik təcrübəyə malik professional elektrik ustası. Bakı şəhərində ev və ofislərdə elektrik quraşdırılması, təmiri və texniki xidmət göstərirəm. Keyfiyyətli iş və müştəri məmnuniyyəti mənim üçün əsasdır.",
-  category: "elektrik",
-  categoryName: "Elektrik",
-  rating: 4.9,
-  reviewCount: 127,
-  completedJobs: 150,
-  hourlyRate: 25,
-  isVerified: true,
-  isInsured: true,
-  isOnline: true,
-  isPremium: true,
-  distance: 2300,
-  availability: "Bu gün mövcud",
-  responseTime: 15,
-  experience: 10,
-  memberSince: "2020-03-15",
-  location: "Yasamal, Bakı",
-  phone: "+994 50 123 45 67",
-  languages: ["Azərbaycan", "Rus", "Türk"],
-  workingHours: {
-    weekdays: "09:00 - 19:00",
-    weekends: "10:00 - 16:00",
-  },
-  services: [
-    { id: "1", name: "Rozetka quraşdırılması", price: 15, duration: "30 dəq" },
-    { id: "2", name: "Kabel çəkilməsi", price: 50, duration: "2-4 saat" },
-    { id: "3", name: "LED işıqlandırma", price: 30, duration: "1-2 saat" },
-    { id: "4", name: "Lüstr quraşdırılması", price: 25, duration: "1 saat" },
-    { id: "5", name: "Elektrik paneli təmiri", price: 80, duration: "2-3 saat" },
-    { id: "6", name: "Elektrik sistemi yoxlanışı", price: 40, duration: "1-2 saat" },
-  ],
-  skills: [
-    "Ev elektrik sistemi",
-    "Ofis elektrik işləri",
-    "LED işıqlandırma",
-    "Smart ev sistemləri",
-    "Generator quraşdırılması",
-  ],
-  stats: {
-    repeatRate: 85, // %
-    responseRate: 98, // %
-    onTimeRate: 96, // %
-    satisfactionRate: 99, // %
-  },
+// Məsafəni formatla (metr və km)
+function formatDistanceText(meters: number): string {
+  if (meters < 1000) {
+    return `${meters} m`
+  }
+  return `${(meters / 1000).toFixed(1)} km`
 }
-
-// Demo portfolio
-const DEMO_PORTFOLIO = [
-  {
-    id: "1",
-    type: "image",
-    url: "/portfolio/1.jpg",
-    thumbnail: "/portfolio/1-thumb.jpg",
-    title: "Mənzil elektrik sistemi",
-    description: "Yeni mənzildə tam elektrik sistemi quraşdırılması",
-    date: "2024-01-15",
-  },
-  {
-    id: "2",
-    type: "image",
-    url: "/portfolio/2.jpg",
-    thumbnail: "/portfolio/2-thumb.jpg",
-    title: "Ofis LED işıqlandırma",
-    description: "Modern ofisdə LED panel işıqlandırma layihəsi",
-    date: "2024-01-10",
-  },
-  {
-    id: "3",
-    type: "image",
-    url: "/portfolio/3.jpg",
-    thumbnail: "/portfolio/3-thumb.jpg",
-    title: "Smart ev sistemi",
-    description: "Villa üçün smart ev idarəetmə sistemi",
-    date: "2023-12-20",
-  },
-  {
-    id: "4",
-    type: "video",
-    url: "/portfolio/4.mp4",
-    thumbnail: "/portfolio/4-thumb.jpg",
-    title: "İşıqlandırma layihəsi",
-    description: "Restoran üçün dekorativ işıqlandırma",
-    date: "2023-12-15",
-  },
-  {
-    id: "5",
-    type: "image",
-    url: "/portfolio/5.jpg",
-    thumbnail: "/portfolio/5-thumb.jpg",
-    title: "Generator quraşdırılması",
-    description: "Evin ehtiyat enerji təchizatı",
-    date: "2023-11-30",
-  },
-  {
-    id: "6",
-    type: "image",
-    url: "/portfolio/6.jpg",
-    thumbnail: "/portfolio/6-thumb.jpg",
-    title: "Elektrik paneli",
-    description: "Yeni elektrik paneli quraşdırılması",
-    date: "2023-11-20",
-  },
-]
-
-// Demo rəylər
-const DEMO_REVIEWS = [
-  {
-    id: "1",
-    author: {
-      name: "Rəşad Əliyev",
-      avatar: "",
-    },
-    rating: 5,
-    date: "2024-01-18",
-    content:
-      "Əla usta! İşini çox peşəkar şəkildə gördü. Vaxtında gəldi, təmiz işlədi. Keyfiyyət qiyməti tam ödəyir. Hər kəsə tövsiyə edirəm!",
-    service: "Elektrik sistemi yoxlanışı",
-    helpful: 12,
-    reply: {
-      content: "Təşəkkür edirəm, Rəşad bəy! Sizinlə işləmək mənim üçün xoş oldu. Hər zaman xidmətinizdəyəm!",
-      date: "2024-01-19",
-    },
-  },
-  {
-    id: "2",
-    author: {
-      name: "Aynur Hüseynova",
-      avatar: "",
-    },
-    rating: 5,
-    date: "2024-01-15",
-    content:
-      "Evimizdə tam elektrik təmiri işləri apardı. Çox səliqəli və etibarlı insandır. Qiymət də münasibdir.",
-    service: "Kabel çəkilməsi",
-    helpful: 8,
-    photos: ["/review-photos/1.jpg", "/review-photos/2.jpg"],
-  },
-  {
-    id: "3",
-    author: {
-      name: "Elçin Məmmədli",
-      avatar: "",
-    },
-    rating: 4,
-    date: "2024-01-10",
-    content:
-      "Yaxşı iş gördü. Bir az gecikmə oldu, amma işin keyfiyyəti mükəmməl idi. Ümumiyyətlə razıyam.",
-    service: "LED işıqlandırma",
-    helpful: 5,
-  },
-  {
-    id: "4",
-    author: {
-      name: "Günel Kazımova",
-      avatar: "",
-    },
-    rating: 5,
-    date: "2024-01-05",
-    content:
-      "Smart ev sistemi quraşdırdı. Hər şeyi ətraflı izah etdi, telefon vasitəsilə idarəetməyi öyrətdi. Əla xidmət!",
-    service: "Smart ev sistemi",
-    helpful: 15,
-  },
-]
 
 // Stats Card komponenti
 function StatCard({
@@ -237,7 +75,7 @@ function StatCard({
 }
 
 // Review Card komponenti
-function ReviewCard({ review }: { review: (typeof DEMO_REVIEWS)[0] }) {
+function ReviewCard({ review, onReport }: { review: any, onReport: (reviewId: string) => void }) {
   const [isHelpful, setIsHelpful] = useState(false)
   const [helpfulCount, setHelpfulCount] = useState(review.helpful)
 
@@ -314,7 +152,10 @@ function ReviewCard({ review }: { review: (typeof DEMO_REVIEWS)[0] }) {
               <ThumbsUp className={cn("h-4 w-4", isHelpful && "fill-current")} />
               Faydalı ({helpfulCount})
             </button>
-            <button className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
+            <button 
+              onClick={() => onReport(review.id)}
+              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-500 transition-colors"
+            >
               <Flag className="h-4 w-4" />
               Şikayət
             </button>
@@ -327,17 +168,73 @@ function ReviewCard({ review }: { review: (typeof DEMO_REVIEWS)[0] }) {
 
 export default function MasterProfilePage() {
   const params = useParams()
+  const masterId = params?.id as string || "1"
   const [isFavorite, setIsFavorite] = useState(false)
   const [activeTab, setActiveTab] = useState("about")
-  const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<
-    (typeof DEMO_PORTFOLIO)[0] | null
-  >(null)
+  const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<any>(null)
   const [reviewsFilter, setReviewsFilter] = useState("all")
+  const [showReportDialog, setShowReportDialog] = useState(false)
+  const [reportReviewId, setReportReviewId] = useState<string | null>(null)
+  const [reportReason, setReportReason] = useState("")
+  const [showWriteReview, setShowWriteReview] = useState(false)
+  const [newReview, setNewReview] = useState({ rating: 5, content: "" })
+  const [isLoading, setIsLoading] = useState(true)
+  const [master, setMaster] = useState<any>(null)
+  const [portfolio, setPortfolio] = useState<any[]>([])
+  const [reviews, setReviews] = useState<any[]>([])
 
-  const master = DEMO_MASTER
+  // Fetch master data from API
+  useEffect(() => {
+    const fetchMaster = async () => {
+      try {
+        setIsLoading(true)
+        const res = await fetch(`/api/masters/${masterId}`)
+        const json = await res.json()
+        if (json.success && json.data) {
+          const d = json.data
+          setMaster(d.master || d)
+          setPortfolio(d.portfolio || [])
+          setReviews(d.reviews || [])
+        }
+      } catch (error) {
+        console.error("Usta məlumatları yüklənmədi:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchMaster()
+  }, [masterId])
+
+  // Handle report review
+  const handleReportReview = (reviewId: string) => {
+    setReportReviewId(reviewId)
+    setShowReportDialog(true)
+  }
+
+  const submitReport = () => {
+    if (reportReason.trim()) {
+      toast.success("Şikayətiniz qəbul olundu. 24 saat ərzində araşdırılacaq.")
+      setShowReportDialog(false)
+      setReportReason("")
+      setReportReviewId(null)
+    } else {
+      toast.error("Şikayət səbəbini yazın")
+    }
+  }
+
+  // Handle submit review
+  const submitReview = () => {
+    if (newReview.content.trim().length < 10) {
+      toast.error("Rəy minimum 10 simvol olmalıdır")
+      return
+    }
+    toast.success("Rəyiniz göndərildi və yoxlamadan sonra dərc ediləcək!")
+    setShowWriteReview(false)
+    setNewReview({ rating: 5, content: "" })
+  }
 
   // Filter reviews
-  const filteredReviews = DEMO_REVIEWS.filter((review) => {
+  const filteredReviews = reviews.filter((review: any) => {
     if (reviewsFilter === "all") return true
     if (reviewsFilter === "5") return review.rating === 5
     if (reviewsFilter === "4") return review.rating === 4
@@ -354,6 +251,14 @@ export default function MasterProfilePage() {
     1: 1,
   }
   const totalReviews = Object.values(ratingBreakdown).reduce((a, b) => a + b, 0)
+
+  if (isLoading || !master) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -397,8 +302,8 @@ export default function MasterProfilePage() {
                 </p>
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
                   <span className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" />
-                    {master.location}
+                    <MapPin className="h-4 w-4 text-primary" />
+                    {master.location} · <span className="font-medium text-primary">{formatDistanceText(master.distance)}</span>
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
@@ -421,7 +326,20 @@ export default function MasterProfilePage() {
                 >
                   <Heart className={cn("h-5 w-5", isFavorite && "fill-current")} />
                 </Button>
-                <Button variant="ghost" size="icon">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => {
+                    const url = window.location.href
+                    const text = `${master.name} - ${master.categoryName} ustası UstaBul-da`
+                    if (navigator.share) {
+                      navigator.share({ title: master.name, text, url })
+                    } else {
+                      navigator.clipboard.writeText(url)
+                      toast.success("Link kopyalandı!")
+                    }
+                  }}
+                >
                   <Share2 className="h-5 w-5" />
                 </Button>
                 <Button variant="outline" asChild>
@@ -579,7 +497,7 @@ export default function MasterProfilePage() {
               <div className="mt-4">
                 <p className="text-xs text-gray-500 mb-2">Dillər:</p>
                 <div className="flex flex-wrap gap-2">
-                  {master.languages.map((lang) => (
+                  {master.languages.map((lang: string) => (
                     <Badge key={lang} variant="secondary" size="sm">
                       {lang}
                     </Badge>
@@ -612,7 +530,7 @@ export default function MasterProfilePage() {
                       Bacarıqlar
                     </h2>
                     <div className="flex flex-wrap gap-2">
-                      {master.skills.map((skill) => (
+                      {master.skills.map((skill: string) => (
                         <Badge key={skill} variant="secondary">
                           {skill}
                         </Badge>
@@ -626,7 +544,7 @@ export default function MasterProfilePage() {
               <TabsContent value="services">
                 <Card className="overflow-hidden">
                   <div className="divide-y">
-                    {master.services.map((service) => (
+                    {master.services.map((service: { id: string; name: string; price: number; duration: string }) => (
                       <div
                         key={service.id}
                         className="flex items-center justify-between p-5 hover:bg-gray-50 transition-colors"
@@ -665,7 +583,7 @@ export default function MasterProfilePage() {
               {/* Portfolio Tab */}
               <TabsContent value="portfolio">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {DEMO_PORTFOLIO.map((item) => (
+                  {portfolio.map((item: any) => (
                     <motion.div
                       key={item.id}
                       whileHover={{ scale: 1.02 }}
@@ -761,10 +679,18 @@ export default function MasterProfilePage() {
                     ))}
                   </div>
 
+                  {/* Write Review Button */}
+                  <div className="mb-4">
+                    <Button onClick={() => setShowWriteReview(true)} className="w-full md:w-auto">
+                      <Star className="mr-2 h-4 w-4" />
+                      Rəy yaz
+                    </Button>
+                  </div>
+
                   {/* Reviews List */}
                   <div className="space-y-4">
                     {filteredReviews.map((review) => (
-                      <ReviewCard key={review.id} review={review} />
+                      <ReviewCard key={review.id} review={review} onReport={handleReportReview} />
                     ))}
                   </div>
 
@@ -789,14 +715,112 @@ export default function MasterProfilePage() {
             <DialogTitle>{selectedPortfolioItem?.title}</DialogTitle>
           </DialogHeader>
           <div className="mt-4">
-            <div className="aspect-video rounded-lg bg-gray-200 flex items-center justify-center mb-4">
-              <Camera className="h-20 w-20 text-gray-400" />
-            </div>
+            {selectedPortfolioItem?.url && (
+              <img 
+                src={selectedPortfolioItem.url} 
+                alt={selectedPortfolioItem.title}
+                className="w-full rounded-lg mb-4"
+              />
+            )}
             <p className="text-gray-600">{selectedPortfolioItem?.description}</p>
             <p className="text-sm text-gray-400 mt-2">
               {selectedPortfolioItem &&
                 formatDate(new Date(selectedPortfolioItem.date))}
             </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Report Review Dialog */}
+      <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rəyi şikayət et</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4 space-y-4">
+            <p className="text-sm text-gray-600">Bu rəyi niyə şikayət edirsiniz?</p>
+            <div className="space-y-2">
+              {["Spam və ya reklam", "Kobud/təhqiredici dil", "Yanlış məlumat", "Digər"].map((reason) => (
+                <button
+                  key={reason}
+                  onClick={() => setReportReason(reason)}
+                  className={cn(
+                    "w-full p-3 text-left rounded-lg border transition-colors",
+                    reportReason === reason 
+                      ? "border-primary bg-primary/5 text-primary" 
+                      : "border-gray-200 hover:border-gray-300"
+                  )}
+                >
+                  {reason}
+                </button>
+              ))}
+            </div>
+            {reportReason === "Digər" && (
+              <textarea
+                placeholder="Əlavə məlumat yazın..."
+                className="w-full p-3 border rounded-lg resize-none"
+                rows={3}
+                onChange={(e) => setReportReason(e.target.value)}
+              />
+            )}
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setShowReportDialog(false)} className="flex-1">
+                Ləğv et
+              </Button>
+              <Button onClick={submitReport} className="flex-1">
+                Göndər
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Write Review Dialog */}
+      <Dialog open={showWriteReview} onOpenChange={setShowWriteReview}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rəy yaz</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Reytinq</label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((rating) => (
+                  <button
+                    key={rating}
+                    onClick={() => setNewReview(prev => ({ ...prev, rating }))}
+                    className="p-1"
+                  >
+                    <Star 
+                      className={cn(
+                        "h-8 w-8 transition-colors",
+                        rating <= newReview.rating 
+                          ? "text-yellow-400 fill-yellow-400" 
+                          : "text-gray-300"
+                      )} 
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Rəyiniz</label>
+              <textarea
+                value={newReview.content}
+                onChange={(e) => setNewReview(prev => ({ ...prev, content: e.target.value }))}
+                placeholder="Təcrübəniz haqqında yazın..."
+                className="w-full p-3 border rounded-lg resize-none"
+                rows={4}
+              />
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setShowWriteReview(false)} className="flex-1">
+                Ləğv et
+              </Button>
+              <Button onClick={submitReview} className="flex-1">
+                Göndər
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

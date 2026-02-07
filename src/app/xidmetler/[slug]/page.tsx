@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
@@ -45,142 +45,6 @@ import {
   SORT_OPTIONS,
 } from "@/lib/constants"
 import { formatDistance } from "@/lib/utils"
-
-// Icon mapping
-const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  elektrik: Zap,
-  santexnik: Droplets,
-  temir: Hammer,
-  temizlik: Sparkles,
-  kondisioner: AirVent,
-  mebel: Sofa,
-  bag: Flower2,
-  elektronika: Tv,
-}
-
-// Demo usta məlumatları
-const DEMO_MASTERS = [
-  {
-    id: "1",
-    name: "Əli Məmmədov",
-    avatar: "",
-    bio: "10 illik təcrübəyə malik elektrik ustası",
-    category: "elektrik",
-    categoryName: "Elektrik",
-    rating: 4.9,
-    reviewCount: 127,
-    completedJobs: 150,
-    hourlyRate: 25,
-    isVerified: true,
-    isInsured: true,
-    isOnline: true,
-    distance: 2300,
-    availability: "Bu gün mövcud",
-    responseTime: 15,
-    experience: 10,
-    services: ["Rozetka quraşdırılması", "Kabel çəkilməsi", "LED işıqlandırma"],
-  },
-  {
-    id: "2",
-    name: "Vüqar Həsənov",
-    avatar: "",
-    bio: "Peşəkar santexnik ustası, 8 il təcrübə",
-    category: "santexnik",
-    categoryName: "Santexnik",
-    rating: 5.0,
-    reviewCount: 89,
-    completedJobs: 200,
-    hourlyRate: 30,
-    isVerified: true,
-    isInsured: true,
-    isOnline: false,
-    distance: 1500,
-    availability: "Sabah mövcud",
-    responseTime: 30,
-    experience: 8,
-    services: ["Kran təmiri", "Boru təmiri", "Unitaz quraşdırılması"],
-  },
-  {
-    id: "3",
-    name: "Rəşad Əliyev",
-    avatar: "",
-    bio: "Ev təmiri və boya işləri üzrə mütəxəssis",
-    category: "temir",
-    categoryName: "Ev Təmiri",
-    rating: 4.8,
-    reviewCount: 156,
-    completedJobs: 180,
-    hourlyRate: 20,
-    isVerified: true,
-    isInsured: false,
-    isOnline: true,
-    distance: 3500,
-    availability: "Bu gün mövcud",
-    responseTime: 45,
-    experience: 12,
-    services: ["Divar boyama", "Parket döşəmə", "Şpaklyovka"],
-  },
-  {
-    id: "4",
-    name: "Tural Qasımov",
-    avatar: "",
-    bio: "Kondisioner ustası, bütün markalara xidmət",
-    category: "kondisioner",
-    categoryName: "Kondisioner",
-    rating: 4.7,
-    reviewCount: 64,
-    completedJobs: 90,
-    hourlyRate: 35,
-    isVerified: true,
-    isInsured: true,
-    isOnline: true,
-    distance: 4200,
-    availability: "Bu gün mövcud",
-    responseTime: 20,
-    experience: 6,
-    services: ["Quraşdırma", "Təmizləmə", "Freon doldurma"],
-  },
-  {
-    id: "5",
-    name: "Zaur Babayev",
-    avatar: "",
-    bio: "Mebel ustası, sifarişlə mebel hazırlanması",
-    category: "mebel",
-    categoryName: "Mebel",
-    rating: 4.9,
-    reviewCount: 112,
-    completedJobs: 145,
-    hourlyRate: 28,
-    isVerified: true,
-    isInsured: false,
-    isOnline: false,
-    distance: 5100,
-    availability: "2 gün sonra",
-    responseTime: 60,
-    experience: 15,
-    services: ["Mətbəx mebeli", "Yataq otağı", "Ofis mebeli"],
-  },
-  {
-    id: "6",
-    name: "Aysel Hüseynova",
-    avatar: "",
-    bio: "Professional təmizlik xidmətləri",
-    category: "temizlik",
-    categoryName: "Təmizlik",
-    rating: 5.0,
-    reviewCount: 203,
-    completedJobs: 320,
-    hourlyRate: 15,
-    isVerified: true,
-    isInsured: true,
-    isOnline: true,
-    distance: 1800,
-    availability: "Bu gün mövcud",
-    responseTime: 10,
-    experience: 5,
-    services: ["Ev təmizliyi", "Ofis təmizliyi", "Pəncərə yuma"],
-  },
-]
 
 // Filter panel component
 function FilterPanel({
@@ -365,8 +229,20 @@ function FilterPanel({
   )
 }
 
+// Icon mapping
+const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  elektrik: Zap,
+  santexnik: Droplets,
+  temir: Hammer,
+  temizlik: Sparkles,
+  kondisioner: AirVent,
+  mebel: Sofa,
+  bag: Flower2,
+  elektronika: Tv,
+}
+
 // Master Card Component
-function MasterCard({ master }: { master: (typeof DEMO_MASTERS)[0] }) {
+function MasterCard({ master }: { master: any }) {
   const [isFavorite, setIsFavorite] = useState(false)
 
   return (
@@ -497,11 +373,32 @@ export default function CategoryPage() {
     isVerified: false,
     isInsured: false,
   })
+  const [masters, setMasters] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Fetch masters from API
+  useEffect(() => {
+    const fetchMasters = async () => {
+      try {
+        setIsLoading(true)
+        const res = await fetch(`/api/masters?categoryId=${slug}`)
+        const json = await res.json()
+        if (json.success && Array.isArray(json.data)) {
+          setMasters(json.data)
+        }
+      } catch (error) {
+        console.error("Ustalar yüklənmədi:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchMasters()
+  }, [slug])
 
   // Filter masters by category
   const categoryMasters = useMemo(() => {
-    return DEMO_MASTERS.filter((m) => m.category === slug)
-  }, [slug])
+    return masters.filter((m: any) => m.category === slug)
+  }, [slug, masters])
 
   // Apply filters
   const filteredMasters = useMemo(() => {

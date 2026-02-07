@@ -1,7 +1,9 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { motion } from "framer-motion"
 import {
   Home,
@@ -24,6 +26,7 @@ import {
   Phone,
   ExternalLink,
   TrendingUp,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -39,132 +42,15 @@ import { formatRelativeTime } from "@/lib/utils"
 const SIDEBAR_ITEMS = [
   { id: "overview", label: "İcmal", icon: Home, href: "/hesab" },
   { id: "orders", label: "Sifarişlərim", icon: FileText, href: "/hesab/sifarisler" },
-  { id: "messages", label: "Mesajlar", icon: MessageSquare, href: "/hesab/mesajlar", badge: 3 },
+  { id: "messages", label: "Mesajlar", icon: MessageSquare, href: "/hesab/mesajlar" },
   { id: "favorites", label: "Sevimlilər", icon: Heart, href: "/hesab/sevimliler" },
   { id: "notifications", label: "Bildirişlər", icon: Bell, href: "/hesab/bildirisler" },
   { id: "settings", label: "Tənzimləmələr", icon: Settings, href: "/hesab/tenzimlemeler" },
 ]
 
-// Demo sifarişlər
-const DEMO_ORDERS = [
-  {
-    id: "UB123456",
-    service: "Elektrik sistemi yoxlanışı",
-    master: {
-      id: "1",
-      name: "Əli Məmmədov",
-      avatar: "",
-      rating: 4.9,
-    },
-    status: "in_progress",
-    date: "2024-01-20",
-    time: "09:00 - 12:00",
-    price: 40,
-    address: "Yasamal, Bakı",
-    createdAt: "2024-01-18T10:30:00",
-  },
-  {
-    id: "UB123455",
-    service: "Kondisioner təmizliyi",
-    master: {
-      id: "4",
-      name: "Tural Quliyev",
-      avatar: "",
-      rating: 4.9,
-    },
-    status: "pending",
-    date: "2024-01-22",
-    time: "15:00 - 18:00",
-    price: 40,
-    address: "Nəsimi, Bakı",
-    createdAt: "2024-01-18T14:20:00",
-  },
-  {
-    id: "UB123454",
-    service: "Kran təmiri",
-    master: {
-      id: "2",
-      name: "Vüqar Həsənov",
-      avatar: "",
-      rating: 5.0,
-    },
-    status: "completed",
-    date: "2024-01-15",
-    time: "12:00 - 15:00",
-    price: 25,
-    address: "Xətai, Bakı",
-    createdAt: "2024-01-14T09:15:00",
-    review: {
-      rating: 5,
-      comment: "Əla iş gördü!",
-    },
-  },
-  {
-    id: "UB123453",
-    service: "LED işıqlandırma",
-    master: {
-      id: "1",
-      name: "Əli Məmmədov",
-      avatar: "",
-      rating: 4.9,
-    },
-    status: "completed",
-    date: "2024-01-10",
-    time: "09:00 - 12:00",
-    price: 55,
-    address: "Yasamal, Bakı",
-    createdAt: "2024-01-09T11:00:00",
-  },
-  {
-    id: "UB123452",
-    service: "Ev təmizliyi",
-    master: {
-      id: "6",
-      name: "Elşən Nəsirov",
-      avatar: "",
-      rating: 4.6,
-    },
-    status: "cancelled",
-    date: "2024-01-08",
-    time: "09:00 - 12:00",
-    price: 50,
-    address: "Binəqədi, Bakı",
-    createdAt: "2024-01-07T16:45:00",
-    cancelReason: "Usta müraciət etmədi",
-  },
-]
-
-// Demo statistika
-const DEMO_STATS = {
-  totalOrders: 12,
-  completedOrders: 8,
-  pendingOrders: 2,
-  totalSpent: 450,
-}
-
-// Demo sevimli ustalar
-const DEMO_FAVORITES = [
-  {
-    id: "1",
-    name: "Əli Məmmədov",
-    category: "Elektrik",
-    rating: 4.9,
-    reviewCount: 127,
-    isOnline: true,
-  },
-  {
-    id: "2",
-    name: "Vüqar Həsənov",
-    category: "Santexnik",
-    rating: 5.0,
-    reviewCount: 89,
-    isOnline: false,
-  },
-]
-
 // Order Card komponenti
-function OrderCard({ order }: { order: (typeof DEMO_ORDERS)[0] }) {
-  const status = ORDER_STATUSES[order.status as keyof typeof ORDER_STATUSES]
+function OrderCard({ order }: { order: any }) {
+  const status = ORDER_STATUSES[order.status as keyof typeof ORDER_STATUSES] || { label: order.status }
 
   return (
     <MotionCard className="p-5">
@@ -359,14 +245,75 @@ function MobileNav({ activeItem }: { activeItem: string }) {
 }
 
 export default function CustomerDashboard() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [activeItem, setActiveItem] = useState("overview")
   const [orderFilter, setOrderFilter] = useState("all")
+  const [orders, setOrders] = useState<any[]>([])
+  const [favorites, setFavorites] = useState<any[]>([])
+  const [stats, setStats] = useState({ totalOrders: 0, completedOrders: 0, pendingOrders: 0, totalSpent: 0 })
+  const [loading, setLoading] = useState(true)
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/giris")
+    }
+  }, [status, router])
+
+  // Fetch data from API
+  const fetchData = useCallback(async () => {
+    try {
+      const [ordersRes, favoritesRes] = await Promise.all([
+        fetch("/api/orders?role=customer").then(r => r.json()).catch(() => ({ data: [] })),
+        fetch("/api/user/favorites").then(r => r.json()).catch(() => ({ data: [] })),
+      ])
+
+      const ordersList = ordersRes.data || []
+      setOrders(ordersList)
+      setFavorites(favoritesRes.data || [])
+
+      // Calculate stats from orders
+      const total = ordersList.length
+      const completed = ordersList.filter((o: any) => o.status === "COMPLETED" || o.status === "completed").length
+      const pending = ordersList.filter((o: any) => o.status === "PENDING" || o.status === "pending").length
+      const spent = ordersList
+        .filter((o: any) => o.status === "COMPLETED" || o.status === "completed")
+        .reduce((sum: number, o: any) => sum + (o.price || 0), 0)
+
+      setStats({ totalOrders: total, completedOrders: completed, pendingOrders: pending, totalSpent: spent })
+    } catch (err) {
+      console.error("Fetch error:", err)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetchData()
+    }
+  }, [status, fetchData])
 
   // Filter orders
-  const filteredOrders = DEMO_ORDERS.filter((order) => {
+  const filteredOrders = orders.filter((order) => {
     if (orderFilter === "all") return true
-    return order.status === orderFilter
+    return order.status?.toLowerCase() === orderFilter
   })
+
+  // Show loading while checking session
+  if (status === "loading" || loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  // Don't render if not authenticated
+  if (!session) {
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -384,7 +331,7 @@ export default function CustomerDashboard() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  Xoş gəlmisiniz, Rəşad! 👋
+                  Xoş gəlmisiniz, {session.user?.name || "Müştəri"}! 👋
                 </h1>
                 <p className="text-gray-600">Hesab icmalınız</p>
               </div>
@@ -401,23 +348,23 @@ export default function CustomerDashboard() {
               <StatCard
                 icon={FileText}
                 label="Ümumi sifarişlər"
-                value={DEMO_STATS.totalOrders}
+                value={stats.totalOrders}
               />
               <StatCard
                 icon={CheckCircle}
                 label="Tamamlanmış"
-                value={DEMO_STATS.completedOrders}
+                value={stats.completedOrders}
                 trend={12}
               />
               <StatCard
                 icon={Clock}
                 label="Gözləyən"
-                value={DEMO_STATS.pendingOrders}
+                value={stats.pendingOrders}
               />
               <StatCard
                 icon={Star}
                 label="Ümumi xərc"
-                value={DEMO_STATS.totalSpent}
+                value={stats.totalSpent}
                 suffix="₼"
               />
             </div>
@@ -494,7 +441,7 @@ export default function CustomerDashboard() {
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
-                {DEMO_FAVORITES.map((master) => (
+                {favorites.map((master: any) => (
                   <MotionCard key={master.id} className="p-4">
                     <div className="flex items-center gap-4">
                       <UserAvatar

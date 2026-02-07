@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { useSession, signOut } from "next-auth/react"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   Menu, 
@@ -16,7 +17,10 @@ import {
   Briefcase,
   Home,
   Search,
-  PlusCircle
+  PlusCircle,
+  LayoutDashboard,
+  Wrench,
+  Shield
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -99,18 +103,35 @@ const NotificationBadge = ({ count }: { count: number }) => {
 
 export function Navbar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const { data: session, status } = useSession()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  
-  // Simulated auth state - real app-da NextAuth istifadə ediləcək
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [user, setUser] = useState({
-    name: "Nigar Həsənova",
-    email: "nigar@example.com",
-    avatar: "",
-    role: "customer" as const,
-  })
   const [notificationCount, setNotificationCount] = useState(3)
+  
+  // Real auth state from NextAuth
+  const isAuthenticated = status === "authenticated" && !!session?.user
+  const user = session?.user as { name?: string; email?: string; image?: string; role?: string } | undefined
+  const userRole = (user?.role || "CUSTOMER").toUpperCase()
+
+  // Get dashboard link based on role
+  const getDashboardLink = () => {
+    switch (userRole) {
+      case "ADMIN":
+        return "/admin"
+      case "MASTER":
+        return "/usta-panel"
+      default:
+        return "/hesab"
+    }
+  }
+
+  // Handle logout
+  const handleLogout = async () => {
+    await signOut({ redirect: false })
+    router.push("/")
+    router.refresh()
+  }
 
   // Scroll listener
   useEffect(() => {
@@ -197,21 +218,23 @@ export function Navbar() {
                     </DropdownMenuContent>
                   </DropdownMenu>
 
-                  {/* Create Order Button */}
-                  <Button size="sm" asChild>
-                    <Link href="/sifaris/yarat">
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Sifariş yarat
-                    </Link>
-                  </Button>
+                  {/* Create Order Button - only for customers */}
+                  {userRole === "CUSTOMER" && (
+                    <Button size="sm" asChild>
+                      <Link href="/sifaris/yarat">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Sifariş yarat
+                      </Link>
+                    </Button>
+                  )}
 
                   {/* Profile Dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="gap-2 pl-2 pr-3">
                         <UserAvatar
-                          src={user.avatar}
-                          name={user.name}
+                          src={user?.image || ""}
+                          name={user?.name || "İstifadəçi"}
                           size="sm"
                         />
                         <ChevronDown className="h-4 w-4 text-gray-400" />
@@ -220,35 +243,76 @@ export function Navbar() {
                     <DropdownMenuContent align="end" className="w-56">
                       <DropdownMenuLabel>
                         <div className="flex flex-col">
-                          <span>{user.name}</span>
+                          <span>{user?.name || "İstifadəçi"}</span>
                           <span className="text-xs font-normal text-gray-500">
-                            {user.email}
+                            {user?.email}
+                          </span>
+                          <span className="text-xs font-medium text-primary mt-1">
+                            {userRole === "ADMIN" ? "Admin" : userRole === "MASTER" ? "Usta" : "Müştəri"}
                           </span>
                         </div>
                       </DropdownMenuLabel>
                       <DropdownMenuSeparator />
+                      
+                      {/* Dashboard Link */}
                       <DropdownMenuItem asChild>
-                        <Link href="/profil">
-                          <User className="mr-2 h-4 w-4" />
-                          Profilim
+                        <Link href={getDashboardLink()}>
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          {userRole === "ADMIN" ? "Admin Panel" : userRole === "MASTER" ? "Usta Paneli" : "Hesabım"}
                         </Link>
                       </DropdownMenuItem>
+
+                      {/* Role-specific links */}
+                      {userRole === "ADMIN" && (
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin/istifadecilar">
+                            <Shield className="mr-2 h-4 w-4" />
+                            İstifadəçilər
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+
+                      {userRole === "MASTER" && (
+                        <DropdownMenuItem asChild>
+                          <Link href="/usta-panel/sifarisler">
+                            <Wrench className="mr-2 h-4 w-4" />
+                            Sifarişlərim
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+
+                      {userRole === "CUSTOMER" && (
+                        <DropdownMenuItem asChild>
+                          <Link href="/sifarislerim">
+                            <Briefcase className="mr-2 h-4 w-4" />
+                            Sifarişlərim
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+
+                      {/* Usta ol - only show for customers */}
+                      {userRole === "CUSTOMER" && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem asChild>
+                            <Link href="/usta-ol" className="text-primary font-medium">
+                              <Wrench className="mr-2 h-4 w-4" />
+                              Usta ol
+                            </Link>
+                          </DropdownMenuItem>
+                        </>
+                      )}
+
                       <DropdownMenuItem asChild>
-                        <Link href="/sifarislerim">
-                          <Briefcase className="mr-2 h-4 w-4" />
-                          Sifarişlərim
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/ayarlar">
+                        <Link href="/tenzimlemeler">
                           <Settings className="mr-2 h-4 w-4" />
-                          Ayarlar
+                          Tənzimləmələr
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
-                        onClick={() => setIsAuthenticated(false)}
-                        className="text-red-600"
+                        onClick={handleLogout}
+                        className="text-red-600 cursor-pointer"
                       >
                         <LogOut className="mr-2 h-4 w-4" />
                         Çıxış

@@ -41,130 +41,6 @@ import {
 } from "@/lib/constants"
 import { formatDistance } from "@/lib/utils"
 
-// Demo usta məlumatları
-const DEMO_MASTERS = [
-  {
-    id: "1",
-    name: "Əli Məmmədov",
-    avatar: "",
-    bio: "10 illik təcrübəyə malik elektrik ustası",
-    category: "elektrik",
-    categoryName: "Elektrik",
-    rating: 4.9,
-    reviewCount: 127,
-    completedJobs: 150,
-    hourlyRate: 25,
-    isVerified: true,
-    isInsured: true,
-    isOnline: true,
-    distance: 2300, // metr
-    availability: "Bu gün mövcud",
-    responseTime: 15, // dəqiqə
-    experience: 10,
-    services: ["Rozetka quraşdırılması", "Kabel çəkilməsi", "LED işıqlandırma"],
-  },
-  {
-    id: "2",
-    name: "Vüqar Həsənov",
-    avatar: "",
-    bio: "Peşəkar santexnik ustası, 8 il təcrübə",
-    category: "santexnik",
-    categoryName: "Santexnik",
-    rating: 5.0,
-    reviewCount: 89,
-    completedJobs: 200,
-    hourlyRate: 30,
-    isVerified: true,
-    isInsured: true,
-    isOnline: false,
-    distance: 1500,
-    availability: "Sabah mövcud",
-    responseTime: 30,
-    experience: 8,
-    services: ["Kran təmiri", "Boru təmiri", "Unitaz quraşdırılması"],
-  },
-  {
-    id: "3",
-    name: "Rəşad Əliyev",
-    avatar: "",
-    bio: "Ev təmiri və boya işləri üzrə mütəxəssis",
-    category: "temir",
-    categoryName: "Ev Təmiri",
-    rating: 4.8,
-    reviewCount: 156,
-    completedJobs: 180,
-    hourlyRate: 20,
-    isVerified: true,
-    isInsured: false,
-    isOnline: true,
-    distance: 3500,
-    availability: "Bu gün mövcud",
-    responseTime: 20,
-    experience: 12,
-    services: ["Divar boyama", "Parket döşəmə", "Gips karton işləri"],
-  },
-  {
-    id: "4",
-    name: "Tural Quliyev",
-    avatar: "",
-    bio: "Kondisioner quraşdırılması və təmiri",
-    category: "kondisioner",
-    categoryName: "Kondisioner",
-    rating: 4.9,
-    reviewCount: 94,
-    completedJobs: 120,
-    hourlyRate: 35,
-    isVerified: true,
-    isInsured: true,
-    isOnline: false,
-    distance: 4200,
-    availability: "Bu gün mövcud",
-    responseTime: 45,
-    experience: 6,
-    services: ["Quraşdırılma", "Təmizlik", "Freon doldurma"],
-  },
-  {
-    id: "5",
-    name: "Orxan Səmədov",
-    avatar: "",
-    bio: "Mebel ustası, sifariş mebel hazırlanması",
-    category: "mebel",
-    categoryName: "Mebel",
-    rating: 4.7,
-    reviewCount: 68,
-    completedJobs: 95,
-    hourlyRate: 40,
-    isVerified: true,
-    isInsured: false,
-    isOnline: true,
-    distance: 5100,
-    availability: "Sabah mövcud",
-    responseTime: 60,
-    experience: 15,
-    services: ["Mebel yığma", "Mebel təmiri", "Sifarişlə mebel"],
-  },
-  {
-    id: "6",
-    name: "Elşən Nəsirov",
-    avatar: "",
-    bio: "Professional təmizlik xidmətləri",
-    category: "temizlik",
-    categoryName: "Təmizlik",
-    rating: 4.6,
-    reviewCount: 112,
-    completedJobs: 250,
-    hourlyRate: 15,
-    isVerified: true,
-    isInsured: true,
-    isOnline: true,
-    distance: 1800,
-    availability: "Bu gün mövcud",
-    responseTime: 10,
-    experience: 5,
-    services: ["Ümumi təmizlik", "Pəncərə yuma", "Kapital təmizlik"],
-  },
-]
-
 // Filtr komponenti
 interface FilterSectionProps {
   title: string
@@ -263,7 +139,7 @@ function PriceSlider({ min, max, value, onChange }: PriceSliderProps) {
 
 // Usta kartı
 interface MasterCardProps {
-  master: (typeof DEMO_MASTERS)[0]
+  master: any
   view: "grid" | "list"
 }
 
@@ -466,6 +342,7 @@ export default function ServicesPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [masters, setMasters] = useState<any[]>([])
 
   // Filter sections open state
   const [openSections, setOpenSections] = useState({
@@ -476,14 +353,27 @@ export default function ServicesPage() {
     availability: false,
   })
 
-  // Simulate loading
+  // Fetch masters from API
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1000)
-    return () => clearTimeout(timer)
+    const fetchMasters = async () => {
+      try {
+        setIsLoading(true)
+        const res = await fetch("/api/masters")
+        const json = await res.json()
+        if (json.success && Array.isArray(json.data)) {
+          setMasters(json.data)
+        }
+      } catch (error) {
+        console.error("Ustalar yüklənmədi:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchMasters()
   }, [])
 
   // Filter masters
-  const filteredMasters = DEMO_MASTERS.filter((master) => {
+  const filteredMasters = masters.filter((master: any) => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       if (
@@ -587,7 +477,7 @@ export default function ServicesPage() {
               checked={selectedCategories.includes(category.id)}
               onChange={() => toggleCategory(category.id)}
               count={
-                DEMO_MASTERS.filter((m) => m.category === category.id).length
+                masters.filter((m: any) => m.category === category.id).length
               }
             />
           ))}

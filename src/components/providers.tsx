@@ -65,10 +65,7 @@ export function Providers({ children }: ProvidersProps) {
           }}
         />
         
-        {/* React Query Devtools - only in development */}
-        {process.env.NODE_ENV === "development" && (
-          <ReactQueryDevtools initialIsOpen={false} />
-        )}
+
       </QueryClientProvider>
     </SessionProvider>
   )

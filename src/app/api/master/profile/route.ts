@@ -3,123 +3,107 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 
-// GET /api/master/profile - Get master profile
+// GET /api/master/profile
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, message: "Giriş tələb olunur" },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    const master = await prisma.master.findFirst({
-      where: { userId: (session.user as any).id },
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
       include: {
-        user: {
-          select: {
-            email: true,
-            phone: true,
-          },
-        },
-        categories: {
+        master: {
           include: {
-            category: true,
+            categories: { include: { category: true } },
+            services: true,
           },
         },
-        services: true,
       },
     })
 
-    if (!master) {
-      return NextResponse.json(
-        { success: false, message: "Usta profili tapılmadı" },
-        { status: 404 }
-      )
+    if (!user?.master) {
+      return NextResponse.json({ success: false, error: "Usta profili tapılmadı" }, { status: 404 })
     }
 
+    const m = user.master
     return NextResponse.json({
       success: true,
-      profile: master,
+      data: {
+        ...m,
+        email: user.email,
+        workingDays: JSON.parse(m.workingDays || "[]"),
+        languages: JSON.parse(m.languages || "[]"),
+        categories: m.categories.map((c) => ({
+          id: c.category.id,
+          name: c.category.name,
+          slug: c.category.slug,
+        })),
+      },
     })
   } catch (error) {
-    console.error("Get profile error:", error)
-    return NextResponse.json(
-      { success: false, message: "Server xətası" },
-      { status: 500 }
-    )
+    console.error("Master profile error:", error)
+    return NextResponse.json({ success: false, error: "Profil yüklənə bilmədi" }, { status: 500 })
   }
 }
 
-// PUT /api/master/profile - Update master profile
-export async function PUT(request: NextRequest) {
+// PATCH /api/master/profile
+export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, message: "Giriş tələb olunur" },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    const master = await prisma.master.findFirst({
-      where: { userId: (session.user as any).id },
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+      include: { master: true },
     })
 
-    if (!master) {
-      return NextResponse.json(
-        { success: false, message: "Usta profili tapılmadı" },
-        { status: 404 }
-      )
+    if (!user?.master) {
+      return NextResponse.json({ success: false, error: "Usta profili tapılmadı" }, { status: 404 })
     }
 
     const body = await request.json()
-    const {
-      firstName,
-      lastName,
-      phone,
-      bio,
-      address,
-      district,
-      experience,
-      hourlyRate,
-      workingDays,
-      workingHoursStart,
-      workingHoursEnd,
-      languages,
-    } = body
+    const { firstName, lastName, bio, phone, address, district, experience,
+            hourlyRate, workingDays, workingHoursStart, workingHoursEnd,
+            languages, avatar, coverImage, categoryIds } = body
 
-    const updatedMaster = await prisma.master.update({
-      where: { id: master.id },
-      data: {
-        ...(firstName && { firstName }),
-        ...(lastName && { lastName }),
-        ...(phone && { phone }),
-        ...(bio && { bio }),
-        ...(address && { address }),
-        ...(district && { district }),
-        ...(experience && { experience }),
-        ...(hourlyRate && { hourlyRate }),
-        ...(workingDays && { workingDays }),
-        ...(workingHoursStart && { workingHoursStart }),
-        ...(workingHoursEnd && { workingHoursEnd }),
-        ...(languages && { languages }),
-      },
+    const updateData: any = {}
+    if (firstName) updateData.firstName = firstName
+    if (lastName) updateData.lastName = lastName
+    if (bio !== undefined) updateData.bio = bio
+    if (phone) updateData.phone = phone
+    if (address !== undefined) updateData.address = address
+    if (district !== undefined) updateData.district = district
+    if (experience !== undefined) updateData.experience = experience
+    if (hourlyRate !== undefined) updateData.hourlyRate = hourlyRate
+    if (workingDays) updateData.workingDays = JSON.stringify(workingDays)
+    if (workingHoursStart) updateData.workingHoursStart = workingHoursStart
+    if (workingHoursEnd) updateData.workingHoursEnd = workingHoursEnd
+    if (languages) updateData.languages = JSON.stringify(languages)
+    if (avatar !== undefined) updateData.avatar = avatar
+    if (coverImage !== undefined) updateData.coverImage = coverImage
+
+    const master = await prisma.master.update({
+      where: { id: user.master.id },
+      data: updateData,
     })
 
-    return NextResponse.json({
-      success: true,
-      message: "Profil yeniləndi",
-      profile: updatedMaster,
-    })
+    // Update categories if provided
+    if (categoryIds && Array.isArray(categoryIds)) {
+      await prisma.masterCategory.deleteMany({ where: { masterId: master.id } })
+      for (const catId of categoryIds) {
+        await prisma.masterCategory.create({
+          data: { masterId: master.id, categoryId: catId },
+        })
+      }
+    }
+
+    return NextResponse.json({ success: true, message: "Profil yeniləndi", data: master })
   } catch (error) {
-    console.error("Update profile error:", error)
-    return NextResponse.json(
-      { success: false, message: "Server xətası" },
-      { status: 500 }
-    )
+    console.error("Master profile update error:", error)
+    return NextResponse.json({ success: false, error: "Profil yenilənə bilmədi" }, { status: 500 })
   }
 }

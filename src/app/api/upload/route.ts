@@ -1,68 +1,59 @@
 import { NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 import { writeFile, mkdir } from "fs/promises"
 import path from "path"
 
-// POST /api/upload - Upload file
+// POST /api/upload
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    }
+
     const formData = await request.formData()
     const file = formData.get("file") as File
-    
+    const folder = (formData.get("folder") as string) || "uploads"
+
     if (!file) {
-      return NextResponse.json(
-        { success: false, message: "Fayl tapılmadı" },
-        { status: 400 }
-      )
+      return NextResponse.json({ success: false, error: "Fayl seçilməyib" }, { status: 400 })
     }
 
-    // Check file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json(
-        { success: false, message: "Fayl ölçüsü 5MB-dan çox ola bilməz" },
-        { status: 400 }
-      )
-    }
-
-    // Check file type
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"]
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { success: false, message: "Yalnız şəkil faylları yüklənə bilər" },
-        { status: 400 }
-      )
+      return NextResponse.json({ success: false, error: "Yalnız şəkil və PDF faylları yüklənə bilər" }, { status: 400 })
     }
 
-    // Create unique filename
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024
+    if (file.size > maxSize) {
+      return NextResponse.json({ success: false, error: "Fayl ölçüsü 5MB-dan çox ola bilməz" }, { status: 400 })
+    }
+
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`
+
+    // Generate unique filename
     const ext = file.name.split(".").pop()
-    const filename = `${uniqueSuffix}.${ext}`
+    const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`
 
     // Ensure upload directory exists
-    const uploadDir = path.join(process.cwd(), "public", "uploads")
-    try {
-      await mkdir(uploadDir, { recursive: true })
-    } catch (e) {
-      // Directory might already exist
-    }
+    const uploadDir = path.join(process.cwd(), "public", folder)
+    await mkdir(uploadDir, { recursive: true })
 
-    // Write file
-    const filePath = path.join(uploadDir, filename)
+    const filePath = path.join(uploadDir, uniqueName)
     await writeFile(filePath, buffer)
 
-    const url = `/uploads/${filename}`
+    const url = `/${folder}/${uniqueName}`
 
     return NextResponse.json({
       success: true,
-      url,
-      filename,
+      data: { url, fileName: uniqueName, originalName: file.name, size: file.size },
     })
   } catch (error) {
     console.error("Upload error:", error)
-    return NextResponse.json(
-      { success: false, message: "Fayl yüklənərkən xəta baş verdi" },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: "Fayl yüklənə bilmədi" }, { status: 500 })
   }
 }

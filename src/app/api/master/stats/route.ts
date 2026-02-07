@@ -2,153 +2,54 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/prisma"
-import { OrderStatus } from "@prisma/client"
 
-// GET /api/master/stats - Get master dashboard stats
+// GET /api/master/stats
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, message: "Giriş tələb olunur" },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    // Get master
-    const master = await prisma.master.findFirst({
-      where: { userId: (session.user as any).id },
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+      include: { master: true },
     })
 
-    if (!master) {
-      return NextResponse.json(
-        { success: false, message: "Usta profili tapılmadı" },
-        { status: 403 }
-      )
+    if (!user?.master) {
+      return NextResponse.json({ success: false, error: "Usta profili tapılmadı" }, { status: 404 })
     }
 
-    // Get current month range
+    const masterId = user.master.id
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
 
-    // Get statistics
-    const [
-      totalOrders,
-      thisMonthOrders,
-      lastMonthOrders,
-      completedOrders,
-      pendingOrders,
-      totalEarnings,
-      thisMonthEarnings,
-      lastMonthEarnings,
-      reviews,
-    ] = await Promise.all([
-      // Total orders
-      prisma.order.count({
-        where: { masterId: master.id },
-      }),
-      // This month orders
-      prisma.order.count({
-        where: {
-          masterId: master.id,
-          createdAt: { gte: startOfMonth },
-        },
-      }),
-      // Last month orders
-      prisma.order.count({
-        where: {
-          masterId: master.id,
-          createdAt: {
-            gte: startOfLastMonth,
-            lte: endOfLastMonth,
-          },
-        },
-      }),
-      // Completed orders
-      prisma.order.count({
-        where: {
-          masterId: master.id,
-          status: OrderStatus.COMPLETED,
-        },
-      }),
-      // Pending orders
-      prisma.order.count({
-        where: {
-          masterId: master.id,
-          status: OrderStatus.PENDING,
-        },
-      }),
-      // Total earnings
-      prisma.order.aggregate({
-        where: {
-          masterId: master.id,
-          status: OrderStatus.COMPLETED,
-        },
-        _sum: { totalPrice: true },
-      }),
-      // This month earnings
-      prisma.order.aggregate({
-        where: {
-          masterId: master.id,
-          status: OrderStatus.COMPLETED,
-          createdAt: { gte: startOfMonth },
-        },
-        _sum: { totalPrice: true },
-      }),
-      // Last month earnings
-      prisma.order.aggregate({
-        where: {
-          masterId: master.id,
-          status: OrderStatus.COMPLETED,
-          createdAt: {
-            gte: startOfLastMonth,
-            lte: endOfLastMonth,
-          },
-        },
-        _sum: { totalPrice: true },
-      }),
-      // Reviews count
-      prisma.review.count({
-        where: { masterId: master.id },
-      }),
+    const [totalOrders, completedOrders, pendingOrders, activeOrders, thisMonthOrders, revenue, pendingApplications] = await Promise.all([
+      prisma.order.count({ where: { masterId } }),
+      prisma.order.count({ where: { masterId, status: "COMPLETED" } }),
+      prisma.order.count({ where: { masterId, status: "PENDING" } }),
+      prisma.order.count({ where: { masterId, status: { in: ["ACCEPTED", "IN_PROGRESS"] } } }),
+      prisma.order.count({ where: { masterId, createdAt: { gte: startOfMonth } } }),
+      prisma.order.aggregate({ where: { masterId, status: "COMPLETED" }, _sum: { finalPrice: true } }),
+      prisma.jobApplication.count({ where: { masterId, status: "PENDING" } }),
     ])
-
-    // Calculate changes
-    const ordersChange = lastMonthOrders > 0
-      ? Math.round(((thisMonthOrders - lastMonthOrders) / lastMonthOrders) * 100)
-      : 100
-
-    const thisMonthEarningsValue = thisMonthEarnings._sum?.totalPrice || 0
-    const lastMonthEarningsValue = lastMonthEarnings._sum?.totalPrice || 0
-    const earningsChange = lastMonthEarningsValue > 0
-      ? Math.round(((thisMonthEarningsValue - lastMonthEarningsValue) / lastMonthEarningsValue) * 100)
-      : 100
 
     return NextResponse.json({
       success: true,
-      stats: {
+      data: {
         totalOrders,
-        thisMonthOrders,
-        ordersChange,
         completedOrders,
         pendingOrders,
-        totalEarnings: totalEarnings._sum?.totalPrice || 0,
-        thisMonthEarnings: thisMonthEarningsValue,
-        earningsChange,
-        rating: master.rating,
-        reviewCount: reviews,
-        responseRate: master.responseRate,
-        profileViews: Math.floor(Math.random() * 500) + 100,
+        activeOrders,
+        thisMonthOrders,
+        totalRevenue: revenue._sum.finalPrice || 0,
+        rating: user.master.rating,
+        reviewCount: user.master.reviewCount,
+        pendingApplications,
       },
     })
   } catch (error) {
-    console.error("Get stats error:", error)
-    return NextResponse.json(
-      { success: false, message: "Server xətası" },
-      { status: 500 }
-    )
+    console.error("Master stats error:", error)
+    return NextResponse.json({ success: false, error: "Statistika yüklənə bilmədi" }, { status: 500 })
   }
 }

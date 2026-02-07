@@ -54,3 +54,7 @@ next-env.d.ts
 # Cache
 .cache/
 .turbo/
+
+# SQLite database
+prisma/dev.db
+prisma/prisma/

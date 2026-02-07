@@ -3,12 +3,30 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { signIn } from "next-auth/react"
+import { signIn, getSession } from "next-auth/react"
 import { motion } from "framer-motion"
 import { Eye, EyeOff, Mail, Lock, Loader2, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
+
+// Get redirect URL based on user role
+function getRedirectUrl(role: string, callbackUrl: string): string {
+  // If there's a specific callback, use it (unless it's just "/")
+  if (callbackUrl && callbackUrl !== "/") {
+    return callbackUrl
+  }
+  
+  // Otherwise redirect based on role
+  switch (role?.toUpperCase()) {
+    case "ADMIN":
+      return "/admin"
+    case "MASTER":
+      return "/usta-panel"
+    default:
+      return "/hesab"
+  }
+}
 
 export default function LoginPage() {
   const router = useRouter()
@@ -36,7 +54,12 @@ export default function LoginPage() {
       if (result?.error) {
         setError(result.error)
       } else {
-        router.push(callbackUrl)
+        // Get session to determine user role
+        const session = await getSession()
+        const userRole = (session?.user as any)?.role || "CUSTOMER"
+        const redirectUrl = getRedirectUrl(userRole, callbackUrl)
+        
+        router.push(redirectUrl)
         router.refresh()
       }
     } catch (err) {
@@ -81,15 +104,8 @@ export default function LoginPage() {
             </motion.div>
           )}
 
-          {/* Demo Credentials Info */}
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm font-medium text-blue-800 mb-1">Demo giriş məlumatları:</p>
-            <p className="text-xs text-blue-700">Email: musteri@demo.az | Şifrə: demo123</p>
-            <p className="text-xs text-blue-700">Email: usta@demo.az | Şifrə: demo123</p>
-          </div>
-
           {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" onKeyDown={(e) => { if (e.key === "Enter" && !isLoading) handleSubmit(e) }}>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <Input
@@ -99,6 +115,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10"
                 required
+                autoComplete="email"
               />
             </div>
 

@@ -2,84 +2,57 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/prisma"
-import { OrderStatus } from "@prisma/client"
 
-// GET /api/master/orders - Get master's orders
+// GET /api/master/orders
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, message: "Giriş tələb olunur" },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    const master = await prisma.master.findFirst({
-      where: { userId: (session.user as any).id },
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+      include: { master: true },
     })
 
-    if (!master) {
-      return NextResponse.json(
-        { success: false, message: "Usta profili tapılmadı" },
-        { status: 403 }
-      )
+    if (!user?.master) {
+      return NextResponse.json({ success: true, data: [] })
     }
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status")
-    const page = parseInt(searchParams.get("page") || "1")
-    const limit = parseInt(searchParams.get("limit") || "10")
-    const skip = (page - 1) * limit
 
-    const where: any = { masterId: master.id }
-    if (status && status !== "all") {
-      where.status = status.toUpperCase() as OrderStatus
-    }
+    const where: any = { masterId: user.master.id }
+    if (status && status !== "all") where.status = status.toUpperCase()
 
-    const [orders, total] = await Promise.all([
-      prisma.order.findMany({
-        where,
-        include: {
-          customer: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              avatar: true,
-            },
-          },
-          category: {
-            select: {
-              id: true,
-              name: true,
-              icon: true,
-            },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      prisma.order.count({ where }),
-    ])
-
-    return NextResponse.json({
-      success: true,
-      orders,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+    const orders = await prisma.order.findMany({
+      where,
+      include: { category: true, customer: true },
+      orderBy: { createdAt: "desc" },
     })
+
+    const formatted = orders.map((o) => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      title: o.title,
+      description: o.description,
+      status: o.status,
+      category: o.category?.name || "",
+      customer: o.customer ? {
+        name: `${o.customer.firstName} ${o.customer.lastName}`,
+        avatar: o.customer.avatar,
+      } : null,
+      address: o.address,
+      scheduledDate: o.scheduledDate,
+      scheduledTime: o.scheduledTime,
+      totalPrice: o.totalPrice || o.estimatedPrice || 0,
+      createdAt: o.createdAt,
+    }))
+
+    return NextResponse.json({ success: true, data: formatted })
   } catch (error) {
-    console.error("Get orders error:", error)
-    return NextResponse.json(
-      { success: false, message: "Server xətası" },
-      { status: 500 }
-    )
+    console.error("Master orders error:", error)
+    return NextResponse.json({ success: false, error: "Sifarişlər yüklənə bilmədi" }, { status: 500 })
   }
 }

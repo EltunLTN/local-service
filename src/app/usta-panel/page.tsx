@@ -1,7 +1,10 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+import { Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import {
   Home,
@@ -42,145 +45,14 @@ import { ORDER_STATUSES } from "@/lib/constants"
 // Sidebar navigation
 const SIDEBAR_ITEMS = [
   { id: "overview", label: "İcmal", icon: Home, href: "/usta-panel" },
-  { id: "orders", label: "Sifarişlər", icon: FileText, href: "/usta-panel/sifarisler", badge: 5 },
+  { id: "jobs", label: "Mövcud işlər", icon: Briefcase, href: "/usta-panel/isler" },
+  { id: "orders", label: "Sifarişlər", icon: FileText, href: "/usta-panel/sifarisler" },
   { id: "calendar", label: "Təqvim", icon: Calendar, href: "/usta-panel/teqvim" },
-  { id: "messages", label: "Mesajlar", icon: MessageSquare, href: "/usta-panel/mesajlar", badge: 8 },
+  { id: "messages", label: "Mesajlar", icon: MessageSquare, href: "/usta-panel/mesajlar" },
   { id: "earnings", label: "Gəlirlər", icon: DollarSign, href: "/usta-panel/gelirler" },
   { id: "analytics", label: "Analitika", icon: BarChart3, href: "/usta-panel/analitika" },
   { id: "profile", label: "Profil", icon: User, href: "/usta-panel/profil" },
   { id: "settings", label: "Tənzimləmələr", icon: Settings, href: "/usta-panel/tenzimlemeler" },
-]
-
-// Demo statistika
-const DEMO_STATS = {
-  totalEarnings: 2450,
-  thisMonthEarnings: 680,
-  earningsChange: 15,
-  totalOrders: 150,
-  thisMonthOrders: 18,
-  ordersChange: 8,
-  rating: 4.9,
-  ratingChange: 0.1,
-  reviewCount: 127,
-  profileViews: 342,
-  viewsChange: 23,
-  responseRate: 98,
-  completionRate: 96,
-}
-
-// Demo gözləyən sifarişlər
-const DEMO_PENDING_ORDERS = [
-  {
-    id: "UB789456",
-    service: "Elektrik sistemi yoxlanışı",
-    customer: {
-      name: "Kamran Əliyev",
-      avatar: "",
-      phone: "+994 50 111 22 33",
-    },
-    date: "2024-01-21",
-    time: "09:00 - 12:00",
-    address: "Yasamal, Nizami küç. 45",
-    distance: 2300,
-    price: 40,
-    urgency: "normal",
-    description: "Mənzildə elektrik sistemi yoxlanmalıdır. Bəzi rozetkalar işləmir.",
-    createdAt: "2024-01-20T08:30:00",
-  },
-  {
-    id: "UB789457",
-    service: "LED işıqlandırma",
-    customer: {
-      name: "Leyla Həsənova",
-      avatar: "",
-      phone: "+994 51 222 33 44",
-    },
-    date: "2024-01-21",
-    time: "15:00 - 18:00",
-    address: "Nəsimi, Təbriz küç. 12",
-    distance: 4500,
-    price: 55,
-    urgency: "urgent",
-    description: "Ofis üçün LED panel işıqlandırma quraşdırılması. 6 ədəd panel.",
-    createdAt: "2024-01-20T10:15:00",
-  },
-  {
-    id: "UB789458",
-    service: "Kabel çəkilməsi",
-    customer: {
-      name: "Orxan Məmmədov",
-      avatar: "",
-      phone: "+994 55 333 44 55",
-    },
-    date: "2024-01-22",
-    time: "09:00 - 12:00",
-    address: "Xətai, Babək pr. 78",
-    distance: 6200,
-    price: 80,
-    urgency: "normal",
-    description: "Yeni mənzildə tam kabel çəkilməsi işləri.",
-    createdAt: "2024-01-20T14:45:00",
-  },
-]
-
-// Demo bugünkü işlər
-const DEMO_TODAY_SCHEDULE = [
-  {
-    id: "UB789450",
-    service: "Rozetka quraşdırılması",
-    customer: {
-      name: "Anar Qurbanov",
-      avatar: "",
-    },
-    time: "09:00 - 10:30",
-    address: "Yasamal, Şərifzadə küç. 22",
-    status: "completed",
-    price: 30,
-  },
-  {
-    id: "UB789451",
-    service: "Lüstr quraşdırılması",
-    customer: {
-      name: "Nigar Əhmədova",
-      avatar: "",
-    },
-    time: "11:00 - 12:30",
-    address: "Səbail, İstiqlaliyyət küç. 15",
-    status: "in_progress",
-    price: 25,
-  },
-  {
-    id: "UB789452",
-    service: "Elektrik paneli təmiri",
-    customer: {
-      name: "Fərid İsmayılov",
-      avatar: "",
-    },
-    time: "14:00 - 16:00",
-    address: "Nərimanov, Atatürk pr. 45",
-    status: "upcoming",
-    price: 80,
-  },
-]
-
-// Demo son rəylər
-const DEMO_RECENT_REVIEWS = [
-  {
-    id: "1",
-    customer: { name: "Rəşad Əliyev", avatar: "" },
-    rating: 5,
-    comment: "Əla usta! İşini çox peşəkar şəkildə gördü.",
-    service: "Elektrik sistemi yoxlanışı",
-    date: "2024-01-18",
-  },
-  {
-    id: "2",
-    customer: { name: "Aynur Hüseynova", avatar: "" },
-    rating: 5,
-    comment: "Çox səliqəli və etibarlı insandır.",
-    service: "Kabel çəkilməsi",
-    date: "2024-01-15",
-  },
 ]
 
 // Stat Card komponenti
@@ -239,7 +111,7 @@ function PendingOrderCard({
   onAccept,
   onReject,
 }: {
-  order: (typeof DEMO_PENDING_ORDERS)[0]
+  order: any
   onAccept: () => void
   onReject: () => void
 }) {
@@ -312,7 +184,7 @@ function PendingOrderCard({
 }
 
 // Schedule Item
-function ScheduleItem({ order }: { order: (typeof DEMO_TODAY_SCHEDULE)[0] }) {
+function ScheduleItem({ order }: { order: any }) {
   return (
     <div className="flex items-center gap-4 p-4 rounded-xl bg-gray-50">
       <div
@@ -374,12 +246,12 @@ function Sidebar({
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3 mb-6 pb-4 border-b">
           <div className="text-center p-3 bg-gray-50 rounded-lg">
-            <p className="text-2xl font-bold text-gray-900">{DEMO_STATS.rating}</p>
+            <p className="text-2xl font-bold text-gray-900">{masterStats.rating}</p>
             <p className="text-xs text-gray-500">Reytinq</p>
           </div>
           <div className="text-center p-3 bg-gray-50 rounded-lg">
             <p className="text-2xl font-bold text-gray-900">
-              {DEMO_STATS.totalOrders}
+              {masterStats.totalOrders}
             </p>
             <p className="text-xs text-gray-500">İş sayı</p>
           </div>
@@ -459,17 +331,95 @@ function MobileNav({ activeItem }: { activeItem: string }) {
 }
 
 export default function MasterDashboard() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [activeItem, setActiveItem] = useState("overview")
-  const [pendingOrders, setPendingOrders] = useState(DEMO_PENDING_ORDERS)
+  const [pendingOrders, setPendingOrders] = useState<any[]>([])
+  const [todaySchedule, setTodaySchedule] = useState<any[]>([])
+  const [recentReviews, setRecentReviews] = useState<any[]>([])
+  const [masterStats, setMasterStats] = useState({
+    totalEarnings: 0, thisMonthEarnings: 0, earningsChange: 0,
+    totalOrders: 0, thisMonthOrders: 0, ordersChange: 0,
+    rating: 0, ratingChange: 0, reviewCount: 0,
+    profileViews: 0, viewsChange: 0, responseRate: 0, completionRate: 0,
+  })
+  const [loading, setLoading] = useState(true)
 
-  const handleAccept = (orderId: string) => {
-    setPendingOrders((prev) => prev.filter((o) => o.id !== orderId))
-    // Show success toast
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/giris")
+    }
+  }, [status, router])
+
+  // Fetch data
+  useEffect(() => {
+    if (status !== "authenticated") return
+    const fetchData = async () => {
+      try {
+        const [statsRes, ordersRes] = await Promise.all([
+          fetch("/api/master/stats").then(r => r.json()).catch(() => ({ data: {} })),
+          fetch("/api/master/orders").then(r => r.json()).catch(() => ({ data: [] })),
+        ])
+
+        const s = statsRes.data || {}
+        setMasterStats({
+          totalEarnings: s.totalEarnings || 0,
+          thisMonthEarnings: s.thisMonthEarnings || 0,
+          earningsChange: s.earningsChange || 0,
+          totalOrders: s.totalOrders || 0,
+          thisMonthOrders: s.thisMonthOrders || 0,
+          ordersChange: s.ordersChange || 0,
+          rating: s.rating || 0,
+          ratingChange: s.ratingChange || 0,
+          reviewCount: s.reviewCount || 0,
+          profileViews: s.profileViews || 0,
+          viewsChange: s.viewsChange || 0,
+          responseRate: s.responseRate || 0,
+          completionRate: s.completionRate || 0,
+        })
+
+        const allOrders = ordersRes.data || []
+        setPendingOrders(allOrders.filter((o: any) => o.status === "PENDING"))
+        setTodaySchedule(allOrders.filter((o: any) => {
+          const today = new Date().toDateString()
+          return o.scheduledDate && new Date(o.scheduledDate).toDateString() === today
+        }))
+      } catch (err) {
+        console.error("Fetch error:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [status])
+
+  const handleAccept = async (orderId: string) => {
+    try {
+      await fetch(`/api/master/orders/${orderId}/accept`, { method: "POST" })
+      setPendingOrders((prev) => prev.filter((o) => o.id !== orderId))
+    } catch {}
   }
 
-  const handleReject = (orderId: string) => {
-    setPendingOrders((prev) => prev.filter((o) => o.id !== orderId))
-    // Show info toast
+  const handleReject = async (orderId: string) => {
+    try {
+      await fetch(`/api/master/orders/${orderId}/cancel`, { method: "POST" })
+      setPendingOrders((prev) => prev.filter((o) => o.id !== orderId))
+    } catch {}
+  }
+
+  // Show loading while checking session
+  if (status === "loading" || loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  // Don't render if not authenticated
+  if (!session) {
+    return null
   }
 
   return (
@@ -488,7 +438,7 @@ export default function MasterDashboard() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  Salam, Əli! 👋
+                  Salam, {session.user?.name || "Usta"}! 👋
                 </h1>
                 <p className="text-gray-600">Usta panelinizə xoş gəlmisiniz</p>
               </div>
@@ -516,7 +466,7 @@ export default function MasterDashboard() {
                   <div>
                     <p className="text-sm text-gray-600">Bu aykı gəliriniz</p>
                     <p className="text-2xl font-bold text-gray-900">
-                      {DEMO_STATS.thisMonthEarnings}₼
+                      {masterStats.thisMonthEarnings}₼
                     </p>
                   </div>
                 </div>
@@ -534,26 +484,26 @@ export default function MasterDashboard() {
               <StatCard
                 icon={DollarSign}
                 label="Ümumi gəlir"
-                value={DEMO_STATS.totalEarnings}
+                value={masterStats.totalEarnings}
                 suffix="₼"
               />
               <StatCard
                 icon={Briefcase}
                 label="Bu ay sifarişlər"
-                value={DEMO_STATS.thisMonthOrders}
-                change={DEMO_STATS.ordersChange}
+                value={masterStats.thisMonthOrders}
+                change={masterStats.ordersChange}
               />
               <StatCard
                 icon={Eye}
                 label="Profil baxışları"
-                value={DEMO_STATS.profileViews}
-                change={DEMO_STATS.viewsChange}
+                value={masterStats.profileViews}
+                change={masterStats.viewsChange}
               />
               <StatCard
                 icon={Star}
                 label="Reytinq"
-                value={DEMO_STATS.rating}
-                change={DEMO_STATS.ratingChange * 100}
+                value={masterStats.rating}
+                change={masterStats.ratingChange * 100}
               />
             </div>
 
@@ -617,9 +567,9 @@ export default function MasterDashboard() {
 
                 <Card className="p-4">
                   <div className="space-y-3">
-                    {DEMO_TODAY_SCHEDULE.map((order) => (
+                    {todaySchedule.length > 0 ? todaySchedule.map((order: any) => (
                       <ScheduleItem key={order.id} order={order} />
-                    ))}
+                    )) : <p className="text-sm text-gray-500 text-center py-4">Bugün üçün iş yoxdur</p>}
                   </div>
                 </Card>
               </div>
@@ -638,7 +588,7 @@ export default function MasterDashboard() {
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
-                {DEMO_RECENT_REVIEWS.map((review) => (
+                {recentReviews.map((review: any) => (
                   <Card key={review.id} className="p-4">
                     <div className="flex items-start gap-3">
                       <UserAvatar
@@ -675,13 +625,13 @@ export default function MasterDashboard() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-600">Cavab faizi</span>
                     <span className="text-sm font-bold text-gray-900">
-                      {DEMO_STATS.responseRate}%
+                      {masterStats.responseRate}%
                     </span>
                   </div>
                   <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
-                      animate={{ width: `${DEMO_STATS.responseRate}%` }}
+                      animate={{ width: `${masterStats.responseRate}%` }}
                       className="h-full bg-green-500 rounded-full"
                       transition={{ duration: 0.5 }}
                     />
@@ -691,13 +641,13 @@ export default function MasterDashboard() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-600">Tamamlama faizi</span>
                     <span className="text-sm font-bold text-gray-900">
-                      {DEMO_STATS.completionRate}%
+                      {masterStats.completionRate}%
                     </span>
                   </div>
                   <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
-                      animate={{ width: `${DEMO_STATS.completionRate}%` }}
+                      animate={{ width: `${masterStats.completionRate}%` }}
                       className="h-full bg-blue-500 rounded-full"
                       transition={{ duration: 0.5, delay: 0.1 }}
                     />

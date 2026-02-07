@@ -2,106 +2,99 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/prisma"
-import { UserRole } from "@prisma/client"
 
-// GET /api/user/profile - Get user profile
+// GET /api/user/profile
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, message: "Giriş tələb olunur" },
-        { status: 401 }
-      )
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: {
-        customer: true,
-        master: {
-          include: {
-            services: true,
-            portfolioItems: true,
-            categories: {
-              include: {
-                category: true,
-              },
-            },
-          },
-        },
-      },
+      where: { email: session.user.email! },
+      include: { customer: true, master: true },
     })
 
     if (!user) {
-      return NextResponse.json(
-        { success: false, message: "İstifadəçi tapılmadı" },
-        { status: 404 }
-      )
+      return NextResponse.json({ success: false, error: "İstifadəçi tapılmadı" }, { status: 404 })
     }
 
-    // Remove sensitive data
-    const { password, ...safeUser } = user
-
+    const profile = user.customer || user.master
     return NextResponse.json({
       success: true,
-      data: safeUser,
+      data: {
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        name: profile ? `${(profile as any).firstName} ${(profile as any).lastName}` : user.email,
+        firstName: (profile as any)?.firstName || "",
+        lastName: (profile as any)?.lastName || "",
+        avatar: (profile as any)?.avatar || null,
+        address: (profile as any)?.address || null,
+        district: (profile as any)?.district || null,
+        emailVerified: user.emailVerified,
+        createdAt: user.createdAt,
+      },
     })
   } catch (error) {
-    console.error("Get profile error:", error)
-    return NextResponse.json(
-      { success: false, message: "Xəta baş verdi" },
-      { status: 500 }
-    )
+    console.error("Profile error:", error)
+    return NextResponse.json({ success: false, error: "Profil yüklənə bilmədi" }, { status: 500 })
   }
 }
 
-// PUT /api/user/profile - Update user profile
+// PUT /api/user/profile
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, message: "Giriş tələb olunur" },
-        { status: 401 }
-      )
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
     const body = await request.json()
-    const { firstName, lastName, phone, bio, avatar } = body
+    const { firstName, lastName, phone, address, district, avatar } = body
 
-    // Update user
-    const updatedUser = await prisma.user.update({
-      where: { id: session.user.id },
-      data: {
-        phone: phone || undefined,
-      },
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+      include: { customer: true, master: true },
     })
 
-    // Update customer profile if exists
-    if (updatedUser.role === UserRole.CUSTOMER || updatedUser.role === UserRole.MASTER) {
-      await prisma.customer.updateMany({
-        where: { userId: session.user.id },
+    if (!user) {
+      return NextResponse.json({ success: false, error: "İstifadəçi tapılmadı" }, { status: 404 })
+    }
+
+    if (phone) {
+      await prisma.user.update({ where: { id: user.id }, data: { phone } })
+    }
+
+    if (user.customer) {
+      await prisma.customer.update({
+        where: { id: user.customer.id },
         data: {
-          firstName: firstName || undefined,
-          lastName: lastName || undefined,
-          avatar: avatar || undefined,
+          ...(firstName && { firstName }),
+          ...(lastName && { lastName }),
+          ...(address !== undefined && { address }),
+          ...(district !== undefined && { district }),
+          ...(avatar !== undefined && { avatar }),
+        },
+      })
+    } else if (user.master) {
+      await prisma.master.update({
+        where: { id: user.master.id },
+        data: {
+          ...(firstName && { firstName }),
+          ...(lastName && { lastName }),
+          ...(address !== undefined && { address }),
+          ...(district !== undefined && { district }),
+          ...(avatar !== undefined && { avatar }),
         },
       })
     }
 
-    return NextResponse.json({
-      success: true,
-      data: updatedUser,
-      message: "Profil yeniləndi",
-    })
+    return NextResponse.json({ success: true, message: "Profil yeniləndi" })
   } catch (error) {
-    console.error("Update profile error:", error)
-    return NextResponse.json(
-      { success: false, message: "Xəta baş verdi" },
-      { status: 500 }
-    )
+    console.error("Profile update error:", error)
+    return NextResponse.json({ success: false, error: "Profil yenilənə bilmədi" }, { status: 500 })
   }
 }

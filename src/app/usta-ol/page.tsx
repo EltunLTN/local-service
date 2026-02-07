@@ -40,11 +40,32 @@ const categories = [
   { id: "kondisioner", name: "Kondisioner", icon: "❄️" },
   { id: "boyaci", name: "Boyacı", icon: "🎨" },
   { id: "qaynaqci", name: "Qaynaqçı", icon: "🔥" },
+  { id: "plitka", name: "Plitka döşəmə", icon: "🧱" },
+  { id: "parket", name: "Parket ustası", icon: "🪵" },
+  { id: "gips", name: "Gips karton", icon: "📐" },
+  { id: "suvaq", name: "Suvaqçı", icon: "🧱" },
+  { id: "bag", name: "Bağ işləri", icon: "🌳" },
+  { id: "suvarma", name: "Suvarma sistemi", icon: "💧" },
+  { id: "paltaryuyan", name: "Paltaryuyan təmiri", icon: "🧺" },
+  { id: "soyuducu", name: "Soyuducu təmiri", icon: "🧊" },
+  { id: "televizor", name: "TV quraşdırma", icon: "📺" },
+  { id: "kamera", name: "Kamera quraşdırma", icon: "📷" },
+  { id: "alarm", name: "Alarm sistemi", icon: "🚨" },
+  { id: "smart_ev", name: "Smart ev", icon: "🏠" },
+  { id: "pəncərə", name: "Pəncərə təmiri", icon: "🪟" },
+  { id: "qapı", name: "Qapı ustası", icon: "🚪" },
+  { id: "kilid", name: "Kilidçi", icon: "🔐" },
+  { id: "xalça", name: "Xalça yuma", icon: "🧹" },
 ]
 
 const districts = [
   "Binəqədi", "Xətai", "Nərimanov", "Nəsimi", "Nizami",
   "Sabunçu", "Səbail", "Suraxanı", "Xəzər", "Yasamal", "Qaradağ",
+  "Pirallahı", "Abşeron", "Sumqayıt", "Xırdalan", "Masazır", "Mərdəkan",
+  "Buzovna", "Bilgəh", "Novxanı", "Zirə", "Şüvəlan", "Türkan",
+  "Hövsan", "Lökbatan", "Ramana", "Maştağa", "Nardaran",
+  "Badamdar", "Biləcəri", "Əhmədli", "Yeni Yasamal", "Həzi Aslanov",
+  "8-ci km", "20 Yanvar", "28 May", "Koroğlu", "İnşaatçılar",
 ]
 
 const steps = [

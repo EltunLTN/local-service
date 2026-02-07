@@ -3,220 +3,110 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 
-// GET /api/user/favorites - Get user favorites
+// GET /api/user/favorites
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, message: "Giriş tələb olunur" },
-        { status: 401 }
-      )
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    const customer = await prisma.customer.findUnique({
-      where: { userId: session.user.id },
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+      include: { customer: true },
+    })
+
+    if (!user?.customer) {
+      return NextResponse.json({ success: true, data: [] })
+    }
+
+    const favorites = await prisma.favorite.findMany({
+      where: { customerId: user.customer.id },
       include: {
-        favorites: {
-          include: {
-            master: {
-              include: {
-                user: {
-                  select: {
-                    id: true,
-                    email: true,
-                  },
-                },
-                categories: {
-                  include: {
-                    category: {
-                      select: {
-                        id: true,
-                        name: true,
-                        slug: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
+        master: {
+          include: { categories: { include: { category: true } } },
         },
       },
     })
 
-    if (!customer) {
-      return NextResponse.json({
-        success: true,
-        data: [],
-      })
-    }
-
-    // Format masters from favorites
-    const favorites = customer.favorites.map((fav) => ({
-      id: fav.master.id,
-      name: `${fav.master.firstName} ${fav.master.lastName}`,
-      avatar: fav.master.avatar,
-      rating: fav.master.rating,
-      reviewCount: fav.master.reviewCount,
-      completedJobs: fav.master.completedJobs,
-      hourlyRate: fav.master.hourlyRate,
-      isVerified: fav.master.isVerified,
-      isInsured: fav.master.isInsured,
-      categories: fav.master.categories.map((c) => c.category),
+    const formatted = favorites.map((f) => ({
+      id: f.id,
+      master: {
+        id: f.master.id,
+        name: `${f.master.firstName} ${f.master.lastName}`,
+        avatar: f.master.avatar,
+        rating: f.master.rating,
+        reviewCount: f.master.reviewCount,
+        completedJobs: f.master.completedJobs,
+        categories: f.master.categories.map((c) => c.category.name),
+        isVerified: f.master.isVerified,
+      },
+      createdAt: f.createdAt,
     }))
 
-    return NextResponse.json({
-      success: true,
-      data: favorites,
-    })
+    return NextResponse.json({ success: true, data: formatted })
   } catch (error) {
-    console.error("Get favorites error:", error)
-    return NextResponse.json(
-      { success: false, message: "Xəta baş verdi" },
-      { status: 500 }
-    )
+    console.error("Favorites error:", error)
+    return NextResponse.json({ success: false, error: "Favoritlər yüklənə bilmədi" }, { status: 500 })
   }
 }
 
-// POST /api/user/favorites - Add to favorites
+// POST /api/user/favorites
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, message: "Giriş tələb olunur" },
-        { status: 401 }
-      )
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+      include: { customer: true },
+    })
+
+    if (!user?.customer) {
+      return NextResponse.json({ success: false, error: "Müştəri profili tapılmadı" }, { status: 400 })
     }
 
     const { masterId } = await request.json()
 
-    if (!masterId) {
-      return NextResponse.json(
-        { success: false, message: "Usta ID tələb olunur" },
-        { status: 400 }
-      )
-    }
-
-    // Get or create customer
-    let customer = await prisma.customer.findUnique({
-      where: { userId: session.user.id },
+    const favorite = await prisma.favorite.create({
+      data: { customerId: user.customer.id, masterId },
     })
 
-    if (!customer) {
-      customer = await prisma.customer.create({
-        data: {
-          userId: session.user.id,
-          firstName: session.user.name?.split(" ")[0] || "",
-          lastName: session.user.name?.split(" ").slice(1).join(" ") || "",
-        },
-      })
-    }
-
-    // Check if master exists
-    const master = await prisma.master.findUnique({
-      where: { id: masterId },
-    })
-
-    if (!master) {
-      return NextResponse.json(
-        { success: false, message: "Usta tapılmadı" },
-        { status: 404 }
-      )
-    }
-
-    // Check if already favorited
-    const existingFavorite = await prisma.favorite.findUnique({
-      where: {
-        customerId_masterId: {
-          customerId: customer.id,
-          masterId: masterId,
-        },
-      },
-    })
-
-    if (existingFavorite) {
-      return NextResponse.json({
-        success: true,
-        message: "Artıq sevimlilərə əlavə edilib",
-      })
-    }
-
-    // Add to favorites
-    await prisma.favorite.create({
-      data: {
-        customerId: customer.id,
-        masterId: masterId,
-      },
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: "Sevimlilərə əlavə edildi",
-    })
+    return NextResponse.json({ success: true, data: favorite })
   } catch (error) {
     console.error("Add favorite error:", error)
-    return NextResponse.json(
-      { success: false, message: "Xəta baş verdi" },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: "Favorit əlavə edilə bilmədi" }, { status: 500 })
   }
 }
 
-// DELETE /api/user/favorites - Remove from favorites
+// DELETE /api/user/favorites
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, message: "Giriş tələb olunur" },
-        { status: 401 }
-      )
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+      include: { customer: true },
+    })
+
+    if (!user?.customer) {
+      return NextResponse.json({ success: false, error: "Müştəri profili tapılmadı" }, { status: 400 })
     }
 
     const { masterId } = await request.json()
 
-    if (!masterId) {
-      return NextResponse.json(
-        { success: false, message: "Usta ID tələb olunur" },
-        { status: 400 }
-      )
-    }
-
-    const customer = await prisma.customer.findUnique({
-      where: { userId: session.user.id },
+    await prisma.favorite.deleteMany({
+      where: { customerId: user.customer.id, masterId },
     })
 
-    if (!customer) {
-      return NextResponse.json(
-        { success: false, message: "Müştəri tapılmadı" },
-        { status: 404 }
-      )
-    }
-
-    // Remove from favorites
-    await prisma.favorite.delete({
-      where: {
-        customerId_masterId: {
-          customerId: customer.id,
-          masterId: masterId,
-        },
-      },
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: "Sevimlilərdən silindi",
-    })
+    return NextResponse.json({ success: true, message: "Favoritdən silindi" })
   } catch (error) {
     console.error("Remove favorite error:", error)
-    return NextResponse.json(
-      { success: false, message: "Xəta baş verdi" },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: "Favorit silinə bilmədi" }, { status: 500 })
   }
 }

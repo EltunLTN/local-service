@@ -3,100 +3,74 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 
-// GET /api/master/portfolio - Get master portfolio
+// GET /api/master/portfolio
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, message: "Giriş tələb olunur" },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    const master = await prisma.master.findFirst({
-      where: { userId: (session.user as any).id },
-      include: {
-        portfolioItems: {
-          orderBy: { createdAt: "desc" },
-        },
-      },
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+      include: { master: true },
     })
 
-    if (!master) {
-      return NextResponse.json(
-        { success: false, message: "Usta profili tapılmadı" },
-        { status: 404 }
-      )
+    if (!user?.master) {
+      return NextResponse.json({ success: true, data: [] })
     }
+
+    const portfolio = await prisma.portfolioItem.findMany({
+      where: { masterId: user.master.id },
+      orderBy: { createdAt: "desc" },
+    })
 
     return NextResponse.json({
       success: true,
-      portfolio: master.portfolioItems,
+      data: portfolio.map((p) => ({ ...p, images: JSON.parse(p.images || "[]") })),
     })
   } catch (error) {
-    console.error("Get portfolio error:", error)
-    return NextResponse.json(
-      { success: false, message: "Server xətası" },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: "Portfolio yüklənə bilmədi" }, { status: 500 })
   }
 }
 
-// POST /api/master/portfolio - Add portfolio item
+// POST /api/master/portfolio
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, message: "Giriş tələb olunur" },
-        { status: 401 }
-      )
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    const master = await prisma.master.findFirst({
-      where: { userId: (session.user as any).id },
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! },
+      include: { master: true },
     })
 
-    if (!master) {
-      return NextResponse.json(
-        { success: false, message: "Usta profili tapılmadı" },
-        { status: 404 }
-      )
+    if (!user?.master) {
+      return NextResponse.json({ success: false, error: "Usta tapılmadı" }, { status: 404 })
     }
 
     const body = await request.json()
-    const { title, description, url, category } = body
-
-    if (!title || !url) {
-      return NextResponse.json(
-        { success: false, message: "Başlıq və URL tələb olunur" },
-        { status: 400 }
-      )
-    }
-
     const item = await prisma.portfolioItem.create({
       data: {
-        masterId: master.id,
-        title,
-        description,
-        url,
-        category,
+        masterId: user.master.id,
+        title: body.title,
+        description: body.description || null,
+        url: body.url,
+        thumbnail: body.thumbnail || null,
+        type: body.type || "IMAGE",
+        beforeImage: body.beforeImage || null,
+        afterImage: body.afterImage || null,
+        images: JSON.stringify(body.images || []),
+        category: body.category || null,
+        duration: body.duration || null,
+        price: body.price || null,
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      message: "Portfolio elementi əlavə edildi",
-      item,
-    })
+    return NextResponse.json({ success: true, data: item })
   } catch (error) {
-    console.error("Add portfolio error:", error)
-    return NextResponse.json(
-      { success: false, message: "Server xətası" },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: "Portfolio əlavə edilə bilmədi" }, { status: 500 })
   }
 }
