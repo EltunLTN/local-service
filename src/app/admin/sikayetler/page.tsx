@@ -326,7 +326,7 @@ export default function AdminReportsPage() {
                             disabled={loadingAction?.id === report.id}
                             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2 disabled:opacity-50"
                           >
-                            {loadingAction?.id === report.id && loadingAction.action === 'review' ? (
+                            {loadingAction?.id === report.id && loadingAction?.action === 'review' ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
                               <Eye className="h-4 w-4" />
@@ -339,7 +339,7 @@ export default function AdminReportsPage() {
                           disabled={loadingAction?.id === report.id}
                           className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2 disabled:opacity-50"
                         >
-                          {loadingAction?.id === report.id && loadingAction.action === 'resolve' ? (
+                          {loadingAction?.id === report.id && loadingAction?.action === 'resolve' ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <CheckCircle className="h-4 w-4" />
@@ -351,7 +351,7 @@ export default function AdminReportsPage() {
                           disabled={loadingAction?.id === report.id}
                           className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2 disabled:opacity-50"
                         >
-                          {loadingAction?.id === report.id && loadingAction.action === 'reject' ? (
+                          {loadingAction?.id === report.id && loadingAction?.action === 'reject' ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <XCircle className="h-4 w-4" />
@@ -363,7 +363,7 @@ export default function AdminReportsPage() {
                           disabled={loadingAction?.id === report.id}
                           className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2 disabled:opacity-50"
                         >
-                          {loadingAction?.id === report.id && loadingAction.action === 'block' ? (
+                          {loadingAction?.id === report.id && loadingAction?.action === 'block' ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <Ban className="h-4 w-4" />

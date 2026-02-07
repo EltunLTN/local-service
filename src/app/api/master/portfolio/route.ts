@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: portfolio.map((p) => ({ ...p, images: JSON.parse(p.images || "[]") })),
+      data: portfolio,
     })
   } catch (error) {
     return NextResponse.json({ success: false, error: "Portfolio yüklənə bilmədi" }, { status: 500 })
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         type: body.type || "IMAGE",
         beforeImage: body.beforeImage || null,
         afterImage: body.afterImage || null,
-        images: JSON.stringify(body.images || []),
+        images: body.images || [],
         category: body.category || null,
         duration: body.duration || null,
         price: body.price || null,

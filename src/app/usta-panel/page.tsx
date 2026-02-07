@@ -43,7 +43,7 @@ import { SimpleRating } from "@/components/ui/rating"
 import { ORDER_STATUSES } from "@/lib/constants"
 
 // Sidebar navigation
-const SIDEBAR_ITEMS = [
+const SIDEBAR_ITEMS: { id: string; label: string; icon: any; href: string; badge?: number }[] = [
   { id: "overview", label: "İcmal", icon: Home, href: "/usta-panel" },
   { id: "jobs", label: "Mövcud işlər", icon: Briefcase, href: "/usta-panel/isler" },
   { id: "orders", label: "Sifarişlər", icon: FileText, href: "/usta-panel/sifarisler" },
@@ -224,9 +224,11 @@ function ScheduleItem({ order }: { order: any }) {
 function Sidebar({
   activeItem,
   setActiveItem,
+  masterStats,
 }: {
   activeItem: string
   setActiveItem: (id: string) => void
+  masterStats: any
 }) {
   return (
     <aside className="hidden lg:block w-64 flex-shrink-0">
@@ -430,7 +432,7 @@ export default function MasterDashboard() {
 
         <div className="flex gap-8">
           {/* Sidebar */}
-          <Sidebar activeItem={activeItem} setActiveItem={setActiveItem} />
+          <Sidebar activeItem={activeItem} setActiveItem={setActiveItem} masterStats={masterStats} />
 
           {/* Main Content */}
           <main className="flex-1 min-w-0 space-y-6">

@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
       data: {
         ...m,
         email: user.email,
-        workingDays: JSON.parse(m.workingDays || "[]"),
-        languages: JSON.parse(m.languages || "[]"),
+        workingDays: m.workingDays,
+        languages: m.languages,
         categories: m.categories.map((c) => ({
           id: c.category.id,
           name: c.category.name,
@@ -79,10 +79,10 @@ export async function PATCH(request: NextRequest) {
     if (district !== undefined) updateData.district = district
     if (experience !== undefined) updateData.experience = experience
     if (hourlyRate !== undefined) updateData.hourlyRate = hourlyRate
-    if (workingDays) updateData.workingDays = JSON.stringify(workingDays)
+    if (workingDays) updateData.workingDays = workingDays
     if (workingHoursStart) updateData.workingHoursStart = workingHoursStart
     if (workingHoursEnd) updateData.workingHoursEnd = workingHoursEnd
-    if (languages) updateData.languages = JSON.stringify(languages)
+    if (languages) updateData.languages = languages
     if (avatar !== undefined) updateData.avatar = avatar
     if (coverImage !== undefined) updateData.coverImage = coverImage
 

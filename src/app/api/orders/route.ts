@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
       estimatedPrice: o.estimatedPrice,
       totalPrice: o.totalPrice,
       finalPrice: o.finalPrice,
-      photos: JSON.parse(o.photos || "[]"),
+      photos: o.photos,
       paymentMethod: o.paymentMethod,
       paymentStatus: o.paymentStatus,
       customer: o.customer ? {
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
         totalPrice: estimatedPrice ? estimatedPrice + urgencyFee : null,
         urgencyFee,
         paymentMethod: paymentMethod || "CASH",
-        photos: JSON.stringify(photos || []),
+        photos: photos || [],
       },
       include: { category: true, subcategory: true },
     })
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Sifariş uğurla yaradıldı!",
-      data: { ...order, photos: JSON.parse(order.photos || "[]") },
+      data: order,
     })
   } catch (error) {
     console.error("Order creation error:", error)

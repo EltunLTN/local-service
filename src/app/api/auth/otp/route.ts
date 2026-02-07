@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      const result = await sendOTPEmail(email, otpCode, user?.name || undefined)
+      const result = await sendOTPEmail(email, otpCode, undefined)
 
       if (!result.success) {
         return NextResponse.json({ success: false, error: result.error }, { status: 500 })

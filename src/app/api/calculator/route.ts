@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
           isActive: true,
         },
       },
-      select: { price: true, minPrice: true, maxPrice: true },
+      select: { price: true },
     })
 
     let minPrice = 0

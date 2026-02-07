@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     await prisma.order.update({
       where: { id: orderId },
       data: {
-        price: parseFloat(amount),
+        totalPrice: parseFloat(amount),
         paymentStatus: "PENDING",
         paymentMethod: method || "CASH",
       },
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      select: { id: true, price: true, paymentStatus: true, paymentMethod: true },
+      select: { id: true, totalPrice: true, paymentStatus: true, paymentMethod: true },
     })
 
     if (!order) {

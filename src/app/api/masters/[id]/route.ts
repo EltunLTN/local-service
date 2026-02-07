@@ -46,10 +46,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         isInsured: master.isInsured,
         responseTime: master.responseTime,
         responseRate: master.responseRate,
-        workingDays: JSON.parse(master.workingDays || "[]"),
+        workingDays: master.workingDays,
         workingHoursStart: master.workingHoursStart,
         workingHoursEnd: master.workingHoursEnd,
-        languages: JSON.parse(master.languages || "[]"),
+        languages: master.languages,
         categories: master.categories.map((c) => ({
           id: c.category.id,
           name: c.category.name,
@@ -58,7 +58,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         services: master.services,
         portfolio: master.portfolioItems.map((p) => ({
           ...p,
-          images: JSON.parse(p.images || "[]"),
         })),
         reviews: master.reviews.map((r) => ({
           id: r.id,
@@ -66,7 +65,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           comment: r.comment,
           reply: r.reply,
           repliedAt: r.repliedAt,
-          photos: JSON.parse(r.photos || "[]"),
+          photos: r.photos,
           createdAt: r.createdAt,
           customer: r.customer ? {
             name: `${r.customer.firstName} ${r.customer.lastName}`,

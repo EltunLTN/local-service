@@ -30,7 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({
       success: true,
       data: {
-        order: { ...order, photos: JSON.parse(order.photos || "[]") },
+        order,
         timeline,
         currentStatus: order.status,
       },

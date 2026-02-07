@@ -1,12 +1,12 @@
 // Prisma schema for UstaBul - Local Service Booking Platform
-// Database: SQLite (local file)
+// Database: PostgreSQL (Neon)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -42,12 +42,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?
-  access_token      String?
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String?
+  id_token          String? @db.Text
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -106,7 +106,7 @@ model Master {
   lastName        String
   avatar          String?
   coverImage      String?
-  bio             String?
+  bio             String? @db.Text
   phone           String
   address         String?
   district        String?
@@ -126,11 +126,11 @@ model Master {
   responseRate    Int      @default(100)
   responseTime    Int      @default(60)
   
-  workingDays     String   @default("[\"monday\",\"tuesday\",\"wednesday\",\"thursday\",\"friday\"]")
+  workingDays     String[] @default(["monday", "tuesday", "wednesday", "thursday", "friday"])
   workingHoursStart String @default("09:00")
   workingHoursEnd   String @default("18:00")
   
-  languages       String   @default("[\"az\"]")
+  languages       String[] @default(["az"])
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -184,7 +184,7 @@ model PortfolioItem {
   description String?
   beforeImage String?
   afterImage  String?
-  images      String   @default("[]")
+  images      String[] @default([])
   category    String?
   duration    Int?
   price       Float?
@@ -245,7 +245,7 @@ model Order {
   serviceId     String?
   
   title         String
-  description   String
+  description   String @db.Text
   status        String   @default("PENDING")
   
   address       String
@@ -266,7 +266,7 @@ model Order {
   paymentStatus String   @default("PENDING")
   paidAt        DateTime?
   
-  photos        String   @default("[]")
+  photos        String[] @default([])
   
   acceptedAt    DateTime?
   startedAt     DateTime?
@@ -297,8 +297,8 @@ model Review {
   customerId String
   masterId   String
   rating     Int
-  comment    String?
-  photos     String   @default("[]")
+  comment    String? @db.Text
+  photos     String[] @default([])
   
   reply      String?
   repliedAt  DateTime?
@@ -340,7 +340,7 @@ model Message {
   orderId    String?
   senderId   String
   receiverId String
-  content    String
+  content    String @db.Text
   type       String   @default("TEXT")
   mediaUrl   String?
   isRead     Boolean  @default(false)
@@ -361,8 +361,8 @@ model Notification {
   userId    String
   type      String
   title     String
-  message   String
-  data      String?
+  message   String @db.Text
+  data      String? @db.Text
   isRead    Boolean  @default(false)
   readAt    DateTime?
   createdAt DateTime @default(now())
@@ -411,7 +411,7 @@ model ConversationMessage {
   id             String   @id @default(cuid())
   conversationId String
   senderId       String
-  content        String
+  content        String @db.Text
   type           String   @default("TEXT")
   mediaUrl       String?
   isRead         Boolean  @default(false)
@@ -431,7 +431,7 @@ model JobApplication {
   masterId    String
   
   price       Float
-  message     String?
+  message     String? @db.Text
   estimatedDuration Int?
   status      String   @default("PENDING")
   
@@ -460,15 +460,15 @@ model Complaint {
   
   type        String
   subject     String
-  description String
-  evidence    String   @default("[]")
+  description String @db.Text
+  evidence    String[] @default([])
   
   status      String   @default("OPEN")
   priority    String   @default("MEDIUM")
   
   adminId     String?
-  adminNote   String?
-  resolution  String?
+  adminNote   String? @db.Text
+  resolution  String? @db.Text
   resolvedAt  DateTime?
   
   createdAt   DateTime @default(now())

@@ -34,7 +34,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       success: true,
       data: {
         ...order,
-        photos: JSON.parse(order.photos || "[]"),
         customer: order.customer ? {
           id: order.customer.id,
           name: `${order.customer.firstName} ${order.customer.lastName}`,
@@ -109,7 +108,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     return NextResponse.json({
       success: true,
       message: "Sifariş yeniləndi",
-      data: { ...order, photos: JSON.parse(order.photos || "[]") },
+      data: order,
     })
   } catch (error) {
     console.error("Order PATCH error:", error)

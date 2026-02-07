@@ -39,7 +39,7 @@ import { ORDER_STATUSES } from "@/lib/constants"
 import { formatRelativeTime } from "@/lib/utils"
 
 // Sidebar navigation
-const SIDEBAR_ITEMS = [
+const SIDEBAR_ITEMS: { id: string; label: string; icon: any; href: string; badge?: number }[] = [
   { id: "overview", label: "İcmal", icon: Home, href: "/hesab" },
   { id: "orders", label: "Sifarişlərim", icon: FileText, href: "/hesab/sifarisler" },
   { id: "messages", label: "Mesajlar", icon: MessageSquare, href: "/hesab/mesajlar" },
