@@ -78,12 +78,12 @@ export default function MasterCalendarPage() {
       
       if (ordersRes.ok) {
         const data = await ordersRes.json()
-        setOrders(data.orders || [])
+        setOrders(data.data || data.orders || [])
       }
       
       if (availabilityRes.ok) {
         const data = await availabilityRes.json()
-        setAvailability(data.availability || [])
+        setAvailability(data.data || data.availability || [])
       }
     } catch (error) {
       console.error("Failed to fetch data:", error)

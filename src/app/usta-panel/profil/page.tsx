@@ -120,21 +120,24 @@ export default function MasterProfilePage() {
       const res = await fetch("/api/master/profile")
       if (res.ok) {
         const data = await res.json()
-        setProfile(data.profile)
-        setFormData({
-          firstName: data.profile.firstName,
-          lastName: data.profile.lastName,
-          bio: data.profile.bio || "",
-          phone: data.profile.phone,
-          address: data.profile.address || "",
-          district: data.profile.district || "",
-          experience: data.profile.experience,
-          hourlyRate: data.profile.hourlyRate,
-          workingDays: data.profile.workingDays,
-          workingHoursStart: data.profile.workingHoursStart,
-          workingHoursEnd: data.profile.workingHoursEnd,
-          languages: data.profile.languages,
-        })
+        const p = data.data || data.profile
+        if (p) {
+          setProfile(p)
+          setFormData({
+            firstName: p.firstName,
+            lastName: p.lastName,
+            bio: p.bio || "",
+            phone: p.phone,
+            address: p.address || "",
+            district: p.district || "",
+            experience: p.experience,
+            hourlyRate: p.hourlyRate,
+            workingDays: p.workingDays,
+            workingHoursStart: p.workingHoursStart,
+            workingHoursEnd: p.workingHoursEnd,
+            languages: p.languages,
+          })
+        }
       }
     } catch (error) {
       console.error("Failed to fetch profile:", error)

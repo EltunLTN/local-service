@@ -187,7 +187,7 @@ function MasterCard({ master, view }: MasterCardProps) {
             <p className="text-sm text-gray-600 mb-3 line-clamp-2">{master.bio}</p>
 
             <div className="flex flex-wrap gap-2 mb-3">
-              {master.services.slice(0, 3).map((service, i) => (
+              {(master.services || []).slice(0, 3).map((service: string, i: number) => (
                 <Badge key={i} variant="secondary" size="sm">
                   {service}
                 </Badge>
@@ -195,13 +195,15 @@ function MasterCard({ master, view }: MasterCardProps) {
             </div>
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-4">
-              <span className="flex items-center gap-1">
-                <MapPin className="h-4 w-4" />
-                {formatDistance(master.distance)}
-              </span>
+              {master.district && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-4 w-4" />
+                  {master.district}
+                </span>
+              )}
               <span className="flex items-center gap-1">
                 <Clock className="h-4 w-4" />
-                {master.availability}
+                {master.availability || "Mövcuddur"}
               </span>
               <span className="flex items-center gap-1">
                 💼 {master.completedJobs} iş
@@ -291,10 +293,12 @@ function MasterCard({ master, view }: MasterCardProps) {
 
         {/* Info */}
         <div className="flex items-center justify-center gap-4 text-xs text-gray-500 mb-4">
-          <span className="flex items-center gap-1">
-            <MapPin className="h-3 w-3" />
-            {formatDistance(master.distance)}
-          </span>
+          {master.district && (
+            <span className="flex items-center gap-1">
+              <MapPin className="h-3 w-3" />
+              {master.district}
+            </span>
+          )}
           <span>💼 {master.completedJobs} iş</span>
         </div>
 
@@ -307,7 +311,7 @@ function MasterCard({ master, view }: MasterCardProps) {
         {/* Price & Actions */}
         <div className="border-t pt-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm text-gray-500">{master.availability}</span>
+            <span className="text-sm text-gray-500">{master.availability || "Mövcuddur"}</span>
             <div>
               <span className="text-xl font-bold text-gray-900">
                 {master.hourlyRate}₼
@@ -379,8 +383,8 @@ export default function ServicesPage() {
       const query = searchQuery.toLowerCase()
       if (
         !master.name.toLowerCase().includes(query) &&
-        !master.categoryName.toLowerCase().includes(query) &&
-        !master.services.some((s) => s.toLowerCase().includes(query))
+        !(master.categoryName || "").toLowerCase().includes(query) &&
+        !(master.services || []).some((s: string) => s.toLowerCase().includes(query))
       ) {
         return false
       }
@@ -392,12 +396,6 @@ export default function ServicesPage() {
       return false
     }
     if (minRating && master.rating < minRating) {
-      return false
-    }
-    if (maxDistance && master.distance > maxDistance * 1000) {
-      return false
-    }
-    if (isAvailableToday && !master.availability.includes("Bu gün")) {
       return false
     }
     if (isVerified && !master.isVerified) {
@@ -419,7 +417,7 @@ export default function ServicesPage() {
       case "price_high":
         return b.hourlyRate - a.hourlyRate
       case "distance":
-        return a.distance - b.distance
+        return 0
       case "reviews":
         return b.reviewCount - a.reviewCount
       default:
@@ -478,7 +476,7 @@ export default function ServicesPage() {
               checked={selectedCategories.includes(category.id)}
               onChange={() => toggleCategory(category.id)}
               count={
-                masters.filter((m: any) => m.category === category.id).length
+                masters.filter((m: any) => m.category === category.id || (m.categories || []).some((c: any) => c.slug === category.id)).length
               }
             />
           ))}

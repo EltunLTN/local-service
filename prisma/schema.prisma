@@ -34,6 +34,7 @@ model User {
   sentMessages     Message[] @relation("sender")
   receivedMessages Message[] @relation("receiver")
   notifications    Notification[]
+  loginHistory     LoginHistory[]
 }
 
 model Account {
@@ -487,4 +488,19 @@ model SystemSetting {
   category  String   @default("general")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// =============================================
+// LOGIN HISTORY
+// =============================================
+
+model LoginHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  ip        String?
+  device    String?
+  location  String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

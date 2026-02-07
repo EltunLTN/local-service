@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
@@ -36,6 +36,7 @@ import {
   Building,
   Wallet,
   Award,
+  LogOut,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -83,9 +84,6 @@ const DISTRICTS = [
   "Nəsimi", "Səbail", "Xətai", "Binəqədi", "Yasamal", "Nizami", "Xəzər",
   "Suraxanı", "Qaradağ", "Sabunçu", "Pirallahı", "Abşeron", "Nərimanov"
 ]
-
-// Demo login history
-const LOGIN_HISTORY: any[] = []
 
 // Sidebar Component
 function Sidebar({ userName }: { userName: string }) {
@@ -140,6 +138,15 @@ function Sidebar({ userName }: { userName: string }) {
           ))}
         </nav>
 
+        {/* Logout Button */}
+        <button
+          onClick={() => signOut({ callbackUrl: "/" })}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-red-500 hover:bg-red-50 w-full mt-2"
+        >
+          <LogOut className="h-5 w-5" />
+          <span className="flex-1 text-left">Çıxış</span>
+        </button>
+
         {/* Upgrade CTA */}
         <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-primary/10 to-orange-500/10">
           <div className="flex items-center gap-2 mb-2">
@@ -149,7 +156,7 @@ function Sidebar({ userName }: { userName: string }) {
           <p className="text-xs text-gray-600 mb-3">
             Daha çox sifariş al, daha çox qazan
           </p>
-          <Button size="sm" className="w-full">
+          <Button size="sm" className="w-full" onClick={() => toast.success("Premium tezliklə aktivləşəcək!")}>
             Yüksəlt
           </Button>
         </div>
@@ -230,6 +237,7 @@ export default function SettingsPage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [loginHistory, setLoginHistory] = useState<any[]>([])
 
   // Profile Settings State
   const [profileData, setProfileData] = useState({
@@ -304,6 +312,18 @@ export default function SettingsPage() {
       router.push("/giris")
     }
   }, [status, router])
+
+  // Fetch login history
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetch("/api/auth/login-history")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success) setLoginHistory(data.data || [])
+        })
+        .catch(() => {})
+    }
+  }, [status])
 
   // Validate profile form
   const validateProfile = () => {
@@ -898,7 +918,7 @@ export default function SettingsPage() {
                     <History className="h-5 w-5 text-gray-400" />
                   </div>
                   <div className="space-y-3">
-                    {LOGIN_HISTORY.map((entry) => (
+                    {loginHistory.length > 0 ? loginHistory.map((entry: any) => (
                       <div
                         key={entry.id}
                         className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
@@ -923,7 +943,9 @@ export default function SettingsPage() {
                           )}
                         </div>
                       </div>
-                    ))}
+                    )) : (
+                      <p className="text-sm text-gray-500 text-center py-4">Giriş tarixçəsi yoxdur</p>
+                    )}
                   </div>
                 </Card>
 

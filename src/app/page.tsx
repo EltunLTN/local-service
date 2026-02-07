@@ -795,7 +795,7 @@ function CTASection() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button
                   size="xl"
-                  className="bg-white text-primary hover:bg-gray-100"
+                  className="bg-orange-500 text-white hover:bg-orange-600 font-bold shadow-lg"
                 >
                   <Link href="/usta-ol" className="flex items-center">
                     Usta kimi qeydiyyat

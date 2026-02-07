@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
         include: {
           user: { select: { email: true } },
           categories: { include: { category: true } },
+          services: { where: { isActive: true }, select: { name: true } },
           _count: { select: { reviews: true, orders: true } },
         },
         orderBy,
@@ -57,8 +58,14 @@ export async function GET(request: NextRequest) {
       experience: m.experience,
       hourlyRate: m.hourlyRate,
       isVerified: m.isVerified,
+      isInsured: m.isInsured,
       isPremium: m.isPremium,
+      isOnline: m.isActive,
       responseTime: m.responseTime,
+      categoryName: m.categories[0]?.category?.name || "",
+      category: m.categories[0]?.category?.slug || "",
+      services: m.services?.map((s: any) => s.name) || [],
+      availability: m.isActive ? "Mövcuddur" : "Mövcud deyil",
       categories: m.categories.map((c) => ({
         id: c.category.id,
         name: c.category.name,

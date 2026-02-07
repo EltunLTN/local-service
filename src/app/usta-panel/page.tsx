@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
-import { Loader2 } from "lucide-react"
+import { useSession, signOut } from "next-auth/react"
+import { Loader2, LogOut } from "lucide-react"
 import { motion } from "framer-motion"
 import {
   Home,
@@ -41,6 +41,7 @@ import { Badge, VerifiedBadge, InsuredBadge, PremiumBadge } from "@/components/u
 import { UserAvatar } from "@/components/ui/avatar"
 import { SimpleRating } from "@/components/ui/rating"
 import { ORDER_STATUSES } from "@/lib/constants"
+import toast from "react-hot-toast"
 
 // Sidebar navigation
 const SIDEBAR_ITEMS: { id: string; label: string; icon: any; href: string; badge?: number }[] = [
@@ -286,6 +287,15 @@ function Sidebar({
           ))}
         </nav>
 
+        {/* Logout Button */}
+        <button
+          onClick={() => signOut({ callbackUrl: "/" })}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-red-500 hover:bg-red-50 w-full mt-2"
+        >
+          <LogOut className="h-5 w-5" />
+          <span className="flex-1 text-left">Çıxış</span>
+        </button>
+
         {/* Upgrade CTA */}
         <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-primary/10 to-orange-500/10">
           <div className="flex items-center gap-2 mb-2">
@@ -295,7 +305,7 @@ function Sidebar({
           <p className="text-xs text-gray-600 mb-3">
             Daha çox sifariş al, daha çox qazan
           </p>
-          <Button size="sm" className="w-full">
+          <Button size="sm" className="w-full" onClick={() => toast && toast.success("Premium tezliklə aktivləşəcək!")}>
             Yüksəlt
           </Button>
         </div>

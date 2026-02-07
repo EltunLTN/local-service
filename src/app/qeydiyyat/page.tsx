@@ -37,6 +37,10 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
+  const [showOtp, setShowOtp] = useState(false)
+  const [otpCode, setOtpCode] = useState("")
+  const [otpLoading, setOtpLoading] = useState(false)
+  const [otpResendTimer, setOtpResendTimer] = useState(0)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
@@ -116,6 +120,49 @@ export default function RegisterPage() {
         throw new Error(data.error || "Qeydiyyat uğursuz oldu")
       }
 
+      // Show OTP verification step
+      setShowOtp(true)
+      setOtpResendTimer(60)
+    } catch (err: any) {
+      setError(err.message || "Xəta baş verdi")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // OTP resend timer
+  React.useEffect(() => {
+    if (otpResendTimer > 0) {
+      const timer = setTimeout(() => setOtpResendTimer(otpResendTimer - 1), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [otpResendTimer])
+
+  const handleVerifyOtp = async () => {
+    if (otpCode.length !== 6) {
+      setError("6 rəqəmli kodu daxil edin")
+      return
+    }
+
+    setOtpLoading(true)
+    setError("")
+
+    try {
+      const response = await fetch("/api/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          otpCode,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Təsdiq uğursuz oldu")
+      }
+
       setSuccess(true)
       setTimeout(() => {
         router.push("/giris")
@@ -123,7 +170,30 @@ export default function RegisterPage() {
     } catch (err: any) {
       setError(err.message || "Xəta baş verdi")
     } finally {
-      setIsLoading(false)
+      setOtpLoading(false)
+    }
+  }
+
+  const handleResendOtp = async () => {
+    if (otpResendTimer > 0) return
+
+    setError("")
+    try {
+      const response = await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Kod göndərilə bilmədi")
+      }
+
+      setOtpResendTimer(60)
+    } catch (err: any) {
+      setError(err.message || "Xəta baş verdi")
     }
   }
 
@@ -147,8 +217,94 @@ export default function RegisterPage() {
             Qeydiyyat uğurlu!
           </h2>
           <p className="text-gray-600 mb-6">
-            Hesabınız yaradıldı. Giriş səhifəsinə yönləndirilirsiniz...
+            Hesabınız təsdiqləndi. Giriş səhifəsinə yönləndirilirsiniz...
           </p>
+        </motion.div>
+      </div>
+    )
+  }
+
+  if (showOtp) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
+        >
+          <div className="text-center mb-8">
+            <Link href="/" className="inline-block">
+              <span className="text-3xl font-bold bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent">
+                UstaBul
+              </span>
+            </Link>
+            <h1 className="text-2xl font-bold text-gray-900 mt-6">
+              Email Təsdiqləmə
+            </h1>
+            <p className="text-gray-600 mt-2">
+              <strong>{formData.email}</strong> ünvanına göndərilən 6 rəqəmli kodu daxil edin
+            </p>
+          </div>
+
+          <Card className="p-6">
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-2 p-3 mb-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"
+              >
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </motion.div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Təsdiq kodu</label>
+                <Input
+                  type="text"
+                  placeholder="000000"
+                  value={otpCode}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 6)
+                    setOtpCode(val)
+                  }}
+                  className="text-center text-2xl tracking-[0.5em] font-bold"
+                  maxLength={6}
+                />
+              </div>
+
+              <Button
+                onClick={handleVerifyOtp}
+                className="w-full"
+                disabled={otpLoading || otpCode.length !== 6}
+              >
+                {otpLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Təsdiqlənir...
+                  </>
+                ) : (
+                  "Təsdiqlə"
+                )}
+              </Button>
+
+              <div className="text-center">
+                {otpResendTimer > 0 ? (
+                  <p className="text-sm text-gray-500">
+                    Yeni kod göndərmək üçün {otpResendTimer} saniyə gözləyin
+                  </p>
+                ) : (
+                  <button
+                    onClick={handleResendOtp}
+                    className="text-sm text-primary hover:underline font-medium"
+                  >
+                    Kodu yenidən göndər
+                  </button>
+                )}
+              </div>
+            </div>
+          </Card>
         </motion.div>
       </div>
     )

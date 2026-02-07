@@ -59,6 +59,11 @@ export default function LoginPage() {
         const userRole = (session?.user as any)?.role || "CUSTOMER"
         const redirectUrl = getRedirectUrl(userRole, callbackUrl)
         
+        // Record login history
+        try {
+          await fetch("/api/auth/login-history", { method: "POST" })
+        } catch {}
+
         router.push(redirectUrl)
         router.refresh()
       }
